@@ -8,7 +8,7 @@
             <label class="text-sm flex items-center gap-1" title="Keep using the WhatsApp Business app on this number">
                 <input type="checkbox" id="coexistence"> I use the WhatsApp Business app on this number
             </label>
-            <button id="connect-whatsapp" class="rounded bg-emerald-600 text-white px-4 py-2 font-semibold hover:bg-emerald-700">Connect WhatsApp</button>
+            <button id="connect-whatsapp" class="rounded bg-brand-600 text-white px-4 py-2 font-semibold hover:bg-brand-700">Connect WhatsApp</button>
         </div>
     @else
         <span class="text-sm text-amber-700">Set META_APP_ID and META_EMBEDDED_SIGNUP_CONFIG_ID in .env to enable Connect WhatsApp.</span>
@@ -17,7 +17,7 @@
 <div id="connect-status" class="hidden mb-4 rounded px-4 py-3 text-sm"></div>
 
 @forelse ($accounts as $account)
-    <div class="bg-white rounded-xl shadow p-6 mb-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
         <div class="flex items-start justify-between">
             <div>
                 <div class="text-lg font-semibold">{{ $account->verified_name ?? 'WhatsApp number' }}</div>
@@ -52,16 +52,16 @@
                 <div class="flex gap-1 mt-1"><input name="template" value="hello_world" class="w-full border rounded px-2 py-1"><input name="language" value="en_US" class="w-20 border rounded px-2 py-1"></div></label>
             <label class="block"><span class="text-xs">Text body</span>
                 <input name="body" placeholder="Hello from the panel" class="mt-1 w-full border rounded px-2 py-1"></label>
-            <button class="rounded bg-emerald-600 text-white px-4 py-2 font-semibold">Send</button>
+            <button class="rounded bg-brand-600 text-white px-4 py-2 font-semibold">Send</button>
         </form>
     </div>
 @empty
-    <div class="bg-white rounded-xl shadow p-10 text-center text-slate-600">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center text-slate-600">
         No number connected yet. Click <b>Connect WhatsApp</b> to link your WhatsApp Business number with Meta.
     </div>
 @endforelse
 
-<details class="mt-8 bg-white rounded-xl shadow p-6">
+<details class="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
     <summary class="cursor-pointer font-semibold">Advanced: add a number manually (IDs + access token)</summary>
     <p class="text-sm text-slate-600 mt-2">For numbers already set up in Meta Business Manager, for example the Cloud API test number. Use a permanent system user token.</p>
     <form method="POST" action="{{ route('whatsapp.manual') }}" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">

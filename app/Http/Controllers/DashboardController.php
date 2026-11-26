@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Campaign;
 use App\Models\Contact;
 use App\Models\Message;
+use App\Models\MessageTemplate;
 use App\Models\WhatsappAccount;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -17,18 +19,47 @@ class DashboardController extends Controller
         $read = (int) ($out['read'] ?? 0);
         $delivered = (int) ($out['delivered'] ?? 0) + $read;
         $sent = (int) ($out['sent'] ?? 0) + $delivered;
+        $failed = (int) ($out['failed'] ?? 0);
+        $attempted = $sent + $failed;
+        $pct = fn (int $n) => $attempted ? round($n * 100 / $attempted, 1) : 0;
+
+        // Last 7 days, oldest first.
+        $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->startOfDay());
+        $first = $days->first();
+        $outByDay = Message::where('direction', 'out')->where('created_at', '>=', $first)->get(['created_at'])
+            ->countBy(fn ($m) => $m->created_at->toDateString());
+        $inByDay = Message::where('direction', 'in')->where('created_at', '>=', $first)->get(['created_at'])
+            ->countBy(fn ($m) => $m->created_at->toDateString());
+        $contactsByDay = Contact::where('created_at', '>=', $first)->get(['created_at'])
+            ->countBy(fn ($c) => $c->created_at->toDateString());
+
+        $account = WhatsappAccount::where('status', 'connected')->first() ?? WhatsappAccount::first();
+        $contacts = Contact::count();
+        $checklist = [
+            ['Connect your WhatsApp number', 'Link your number with Meta in 2 minutes', (bool) $account, route('whatsapp.index')],
+            ['Get a template approved', 'Create or sync a message template', MessageTemplate::approved()->exists(), route('templates.index')],
+            ['Upload your contacts', 'Import your customer list from CSV', $contacts > 0, route('contacts.index')],
+            ['Send your first campaign', 'Reach your customers in bulk', Campaign::exists(), route('campaigns.create')],
+            ['Set up your first bot', 'Auto-reply to "price", "hi", "help"', false, route('soon', 'bots')],
+        ];
 
         return view('dashboard', [
-            'stats' => [
-                'Connected numbers' => WhatsappAccount::where('status', 'connected')->count(),
-                'Contacts' => Contact::count(),
-                'Sent (30 days)' => $sent,
-                'Delivered (30 days)' => $delivered,
-                'Read (30 days)' => $read,
-                'Replies (30 days)' => Message::where('direction', 'in')->where('created_at', '>=', $since)->count(),
+            'account' => $account,
+            'contacts' => $contacts,
+            'campaignsThisMonth' => Campaign::where('created_at', '>=', now()->startOfMonth())->count(),
+            'funnel' => [
+                'sent' => $sent, 'delivered' => $delivered, 'read' => $read, 'failed' => $failed,
+                'deliveredPct' => $pct($delivered), 'readPct' => $pct($read), 'failedPct' => $pct($failed),
             ],
+            'replies' => Message::where('direction', 'in')->where('created_at', '>=', $since)->count(),
+            'chart' => [
+                'labels' => $days->map(fn (Carbon $d) => $d->format('d M'))->all(),
+                'outbound' => $days->map(fn ($d) => $outByDay[$d->toDateString()] ?? 0)->all(),
+                'inbound' => $days->map(fn ($d) => $inByDay[$d->toDateString()] ?? 0)->all(),
+                'contacts' => $days->map(fn ($d) => $contactsByDay[$d->toDateString()] ?? 0)->all(),
+            ],
+            'checklist' => $checklist,
             'campaigns' => Campaign::with('template')->latest()->limit(5)->get(),
-            'hasNumber' => WhatsappAccount::exists(),
         ]);
     }
 }

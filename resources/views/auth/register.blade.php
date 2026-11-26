@@ -12,7 +12,7 @@
             @error($field)<span class="text-sm text-red-600">{{ $message }}</span>@enderror
         </label>
     @endforeach
-    <button class="w-full rounded bg-emerald-600 text-white py-2 font-semibold hover:bg-emerald-700">Sign up</button>
+    <button class="w-full rounded bg-brand-600 text-white py-2 font-semibold hover:bg-brand-700">Sign up</button>
 </form>
-<p class="mt-4 text-sm text-center">Already have an account? <a class="text-emerald-700 underline" href="{{ route('login') }}">Log in</a></p>
+<p class="mt-4 text-sm text-center">Already have an account? <a class="text-brand-700 underline" href="{{ route('login') }}">Log in</a></p>
 @endsection
