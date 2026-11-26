@@ -3,7 +3,7 @@
 @section('content')
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold">Contacts <span class="text-base text-slate-500">({{ number_format($contacts->total()) }})</span></h1>
-    <a href="{{ route('contacts.create') }}" class="rounded bg-emerald-600 text-white px-4 py-2 font-semibold">Add contact</a>
+    <a href="{{ route('contacts.create') }}" class="rounded bg-brand-600 text-white px-4 py-2 font-semibold">Add contact</a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -16,7 +16,7 @@
             </select>
             <button class="rounded border px-4">Filter</button>
         </form>
-        <div class="bg-white rounded-xl shadow overflow-x-auto">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-slate-100 text-left"><tr><th class="p-3">Phone</th><th class="p-3">Name</th><th class="p-3">Groups</th><th class="p-3">Opt-in</th><th class="p-3"></th></tr></thead>
                 <tbody>
@@ -44,7 +44,7 @@
     </div>
 
     <div class="space-y-6">
-        <div class="bg-white rounded-xl shadow p-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
             <h2 class="font-semibold mb-3">Import CSV</h2>
             <form method="POST" action="{{ route('contacts.import') }}" enctype="multipart/form-data" class="space-y-3 text-sm">
                 @csrf
@@ -58,7 +58,7 @@
                 <input name="default_country_code" value="91" placeholder="Default country code" class="w-full border rounded px-2 py-1">
                 <input name="opt_in_source" value="{{ old('opt_in_source', 'csv import') }}" placeholder="Where did they opt in?" class="w-full border rounded px-2 py-1">
                 <label class="flex gap-2 items-start text-xs"><input type="checkbox" name="consent" value="1" class="mt-0.5"> These contacts agreed to receive WhatsApp messages from my business.</label>
-                <button class="w-full rounded bg-emerald-600 text-white py-2 font-semibold">Upload</button>
+                <button class="w-full rounded bg-brand-600 text-white py-2 font-semibold">Upload</button>
             </form>
             @if ($imports->isNotEmpty())
                 <div class="mt-4 text-xs space-y-1">
@@ -69,7 +69,7 @@
             @endif
         </div>
 
-        <div class="bg-white rounded-xl shadow p-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
             <h2 class="font-semibold mb-3">Groups</h2>
             <ul class="text-sm space-y-1 mb-3">
                 @foreach ($groups as $g)

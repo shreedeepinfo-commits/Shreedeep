@@ -14,7 +14,7 @@
         <input name="password" type="password" required class="mt-1 w-full rounded border-slate-300 border px-3 py-2">
     </label>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remember"> Remember me</label>
-    <button class="w-full rounded bg-emerald-600 text-white py-2 font-semibold hover:bg-emerald-700">Log in</button>
+    <button class="w-full rounded bg-brand-600 text-white py-2 font-semibold hover:bg-brand-700">Log in</button>
 </form>
-<p class="mt-4 text-sm text-center">New here? <a class="text-emerald-700 underline" href="{{ route('register') }}">Create an account</a></p>
+<p class="mt-4 text-sm text-center">New here? <a class="text-brand-700 underline" href="{{ route('register') }}">Create an account</a></p>
 @endsection

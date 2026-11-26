@@ -2,7 +2,7 @@
 
 @section('content')
 <h1 class="text-2xl font-semibold mb-6">New message template</h1>
-<form method="POST" action="{{ route('templates.store') }}" class="bg-white rounded-xl shadow p-6 max-w-3xl space-y-4">
+<form method="POST" action="{{ route('templates.store') }}" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-3xl space-y-4">
     @csrf
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="block"><span class="text-sm font-medium">WhatsApp number</span>
@@ -42,7 +42,7 @@
             </div>
         @endfor
     </div>
-    <button class="rounded bg-emerald-600 text-white px-4 py-2 font-semibold">Submit to Meta for approval</button>
+    <button class="rounded bg-brand-600 text-white px-4 py-2 font-semibold">Submit to Meta for approval</button>
 </form>
 @endsection
 

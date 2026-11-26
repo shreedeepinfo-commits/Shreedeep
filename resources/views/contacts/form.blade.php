@@ -2,7 +2,7 @@
 
 @section('content')
 <h1 class="text-2xl font-semibold mb-6">{{ $contact->exists ? 'Edit contact' : 'Add contact' }}</h1>
-<form method="POST" action="{{ $contact->exists ? route('contacts.update', $contact) : route('contacts.store') }}" class="bg-white rounded-xl shadow p-6 max-w-lg space-y-4">
+<form method="POST" action="{{ $contact->exists ? route('contacts.update', $contact) : route('contacts.store') }}" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-lg space-y-4">
     @csrf
     @if ($contact->exists) @method('PUT') @endif
     <label class="block"><span class="text-sm font-medium">Phone (with country code)</span>
@@ -20,6 +20,6 @@
         </div>
     </div>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="opted_out" value="1" @checked($contact->opted_out_at)> Opted out (never send campaigns)</label>
-    <button class="rounded bg-emerald-600 text-white px-4 py-2 font-semibold">Save</button>
+    <button class="rounded bg-brand-600 text-white px-4 py-2 font-semibold">Save</button>
 </form>
 @endsection

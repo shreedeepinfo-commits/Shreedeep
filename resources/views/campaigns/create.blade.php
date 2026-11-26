@@ -4,11 +4,11 @@
 <h1 class="text-2xl font-semibold mb-6">New campaign</h1>
 
 @if ($templates->isEmpty())
-    <div class="bg-white rounded-xl shadow p-8 text-slate-600">You need at least one <b>approved</b> template. <a class="underline" href="{{ route('templates.index') }}">Go to templates</a>.</div>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-slate-600">You need at least one <b>approved</b> template. <a class="underline" href="{{ route('templates.index') }}">Go to templates</a>.</div>
 @else
 <form method="POST" action="{{ route('campaigns.store') }}" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     @csrf
-    <div class="lg:col-span-2 bg-white rounded-xl shadow p-6 space-y-5">
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
         <label class="block"><span class="text-sm font-medium">Campaign name</span>
             <input name="name" value="{{ old('name') }}" required class="mt-1 w-full border rounded px-3 py-2" placeholder="Diwali offer 2026"></label>
 
@@ -53,7 +53,7 @@
             <p class="text-xs text-slate-500 mt-1">Times are in {{ config('app.timezone') }}.</p>
         </div>
 
-        <button class="rounded bg-emerald-600 text-white px-5 py-2 font-semibold">Launch campaign</button>
+        <button class="rounded bg-brand-600 text-white px-5 py-2 font-semibold">Launch campaign</button>
     </div>
 
     <div>

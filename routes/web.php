@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\ComingSoonController;
+use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
@@ -28,6 +30,8 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'workspace'])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::post('/workspaces/switch', [WorkspaceController::class, 'switch'])->name('workspaces.switch');
+    Route::get('/soon/{feature}', ComingSoonController::class)->name('soon');
 
     Route::get('/whatsapp', [WhatsappAccountController::class, 'index'])->name('whatsapp.index');
     Route::post('/whatsapp/connect', [WhatsappAccountController::class, 'connect'])->name('whatsapp.connect');

@@ -1,15 +1,15 @@
-@extends('layouts.app', ['title' => 'Inbox'])
+@extends('layouts.app', ['title' => 'Live Chat'])
 
 @push('head')<meta http-equiv="refresh" content="20">@endpush
 
 @section('content')
-<h1 class="text-2xl font-semibold mb-6">Inbox</h1>
-<div class="bg-white rounded-xl shadow flex h-[75vh] overflow-hidden">
+<h1 class="text-2xl font-semibold mb-6">Live Chat</h1>
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex h-[75vh] overflow-hidden">
     <div class="w-80 border-r flex flex-col">
         <form class="p-3 border-b"><input name="q" value="{{ request('q') }}" placeholder="Search" class="w-full border rounded px-3 py-1.5 text-sm"></form>
         <div class="flex-1 overflow-y-auto">
             @forelse ($conversations as $c)
-                <a href="{{ route('inbox.show', $c) }}" class="block px-4 py-3 border-b text-sm {{ $contact?->id === $c->id ? 'bg-emerald-50' : 'hover:bg-slate-50' }}">
+                <a href="{{ route('inbox.show', $c) }}" class="block px-4 py-3 border-b text-sm {{ $contact?->id === $c->id ? 'bg-brand-50' : 'hover:bg-slate-50' }}">
                     <div class="font-medium">{{ $c->name ?: '+'.$c->phone }}</div>
                     <div class="text-xs text-slate-500">+{{ $c->phone }} · {{ $c->last_message_at?->diffForHumans() }}</div>
                 </a>
@@ -42,7 +42,7 @@
                 @csrf
                 @if ($windowOpen)
                     <input name="body" placeholder="Type a reply" class="flex-1 border rounded px-3 py-2" autocomplete="off" required>
-                    <button class="rounded bg-emerald-600 text-white px-4 font-semibold">Send</button>
+                    <button class="rounded bg-brand-600 text-white px-4 font-semibold">Send</button>
                 @else
                     <div class="text-sm text-slate-600">The 24-hour reply window is closed. Send an approved template from <a href="{{ route('campaigns.create') }}" class="underline">Campaigns</a>.</div>
                 @endif
