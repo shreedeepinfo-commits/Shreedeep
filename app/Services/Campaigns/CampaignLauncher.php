@@ -16,7 +16,8 @@ class CampaignLauncher
         $query = Contact::withoutGlobalScopes()
             ->where('workspace_id', $campaign->workspace_id)
             ->subscribed()
-            ->when(empty($audience['all']), fn ($q) => $q->whereHas('groups', fn ($g) => $g->whereIn('contact_groups.id', $audience['groups'] ?? [])))
+            ->when(empty($audience['all']) && empty($audience['tags']), fn ($q) => $q->whereHas('groups', fn ($g) => $g->whereIn('contact_groups.id', $audience['groups'] ?? [])))
+            ->when(empty($audience['all']) && ! empty($audience['tags']), fn ($q) => self::withAnyTag($q, $audience['tags']))
             ->select(['id', 'phone']);
 
         $now = now();
@@ -41,6 +42,16 @@ class CampaignLauncher
         $campaign->update(['total' => $total]);
 
         return $total;
+    }
+
+    /** Contacts having at least one of the tags (tags are stored as a JSON array). */
+    public static function withAnyTag($query, array $tags)
+    {
+        return $query->where(function ($q) use ($tags) {
+            foreach ($tags as $tag) {
+                $q->orWhere('tags', 'like', '%'.json_encode((string) $tag).'%');
+            }
+        });
     }
 
     /** Queue a send job for every message still queued. Safe to call again on resume. */

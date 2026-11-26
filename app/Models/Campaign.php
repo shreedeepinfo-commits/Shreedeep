@@ -64,4 +64,22 @@ class Campaign extends Model
             'failed' => (int) ($counts['failed'] ?? 0),
         ];
     }
+
+    /** Approximate Meta charge (INR) for this campaign's messages, from the template category. */
+    public static function rate(?string $category): float
+    {
+        return (float) (config('whatsapp.rates')[strtoupper((string) $category)] ?? config('whatsapp.rates.MARKETING'));
+    }
+
+    public function estimatedCost(): float
+    {
+        return round($this->total * self::rate($this->template?->category), 2);
+    }
+
+    /** Failed messages that may be sent once more (temporary Meta errors, not retried before). */
+    public function retryableMessages()
+    {
+        return $this->messages()->where('status', 'failed')->where('retry_count', 0)
+            ->whereIn('error_code', config('whatsapp.retryable_errors'));
+    }
 }
