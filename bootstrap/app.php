@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'workspace' => \App\Http\Middleware\SetCurrentWorkspace::class,
         ]);
+        // Resolve the workspace before route model binding so bound models are tenant-scoped.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\SetCurrentWorkspace::class,
+        );
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/dashboard');
     })
