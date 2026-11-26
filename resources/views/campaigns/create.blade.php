@@ -1,66 +1,109 @@
 @extends('layouts.app', ['title' => 'New campaign'])
 
 @section('content')
-<h1 class="text-2xl font-semibold mb-6">New campaign</h1>
+<x-page-header title="New campaign" subtitle="Pick a template, choose who gets it, personalise and send.">
+    <x-btn :href="route('campaigns.index')" variant="outline">Cancel</x-btn>
+</x-page-header>
 
 @if ($templates->isEmpty())
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-slate-600">You need at least one <b>approved</b> template. <a class="underline" href="{{ route('templates.index') }}">Go to templates</a>.</div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+        <div class="font-semibold">You need at least one approved template</div>
+        <p class="text-sm text-slate-500 mt-1">Create a template and wait for Meta approval, or sync your existing templates.</p>
+        <x-btn :href="route('templates.index')" class="mt-4">Go to templates</x-btn>
+    </div>
 @else
-<form method="POST" action="{{ route('campaigns.store') }}" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<form method="POST" action="{{ route('campaigns.store') }}" enctype="multipart/form-data" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     @csrf
-    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
-        <label class="block"><span class="text-sm font-medium">Campaign name</span>
-            <input name="name" value="{{ old('name') }}" required class="mt-1 w-full border rounded px-3 py-2" placeholder="Diwali offer 2026"></label>
+    <div class="xl:col-span-2 space-y-5">
+        {{-- 1. Details --}}
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-4"><span class="w-7 h-7 rounded-full bg-brand-600 text-white grid place-items-center text-sm font-semibold">1</span><span class="font-semibold">Campaign &amp; template</span></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="block"><span class="text-sm font-medium text-slate-700">Campaign name</span>
+                    <input name="name" value="{{ old('name', 'Campaign '.now()->format('d M Y, h:i A')) }}" required class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
+                <label class="block"><span class="text-sm font-medium text-slate-700">Approved template</span>
+                    <select name="message_template_id" id="template" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5" required>
+                        @foreach ($templates as $t)
+                            <option value="{{ $t->id }}" @selected(old('message_template_id', request('template')) == $t->id)>{{ $t->name }} · {{ $t->language }} · {{ strtolower($t->category) }}</option>
+                        @endforeach
+                    </select></label>
+            </div>
+            <div id="header-media" class="hidden mt-4">
+                <label class="block"><span class="text-sm font-medium text-slate-700">Header media link (public https URL)</span>
+                    <input name="header_media_url" value="{{ old('header_media_url') }}" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5" placeholder="https://…/offer.jpg"></label>
+            </div>
+        </section>
 
-        <label class="block"><span class="text-sm font-medium">Template</span>
-            <select name="message_template_id" id="template" class="mt-1 w-full border rounded px-3 py-2" required>
-                @foreach ($templates as $t)
-                    <option value="{{ $t->id }}" @selected(old('message_template_id') == $t->id)>{{ $t->name }} ({{ $t->language }})</option>
+        {{-- 2. Audience --}}
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-4"><span class="w-7 h-7 rounded-full bg-brand-600 text-white grid place-items-center text-sm font-semibold">2</span><span class="font-semibold">Audience</span></div>
+            @php $aud = old('audience', $groups->isEmpty() ? 'paste' : 'groups'); @endphp
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                @foreach (['groups' => ['Contact lists', 'list'], 'paste' => ['Paste numbers', 'clipboard'], 'csv' => ['Upload CSV', 'upload'], 'all' => ['All contacts', 'users']] as $key => [$label, $icon])
+                    <label class="aud-opt cursor-pointer flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium {{ $aud === $key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200' }}">
+                        <input type="radio" name="audience" value="{{ $key }}" class="sr-only" @checked($aud === $key)> <x-icon :name="$icon" class="w-4 h-4" /> {{ $label }}
+                    </label>
                 @endforeach
-            </select></label>
-
-        <div id="header-media" class="hidden">
-            <label class="block"><span class="text-sm font-medium">Header media link (public https URL)</span>
-                <input name="header_media_url" value="{{ old('header_media_url') }}" class="mt-1 w-full border rounded px-3 py-2" placeholder="https://…/offer.jpg"></label>
-        </div>
-        <div id="header-var" class="hidden">
-            <span class="text-sm font-medium">Header variable</span>
-            <div class="grid grid-cols-3 gap-2 mt-1">
-                <select name="variables[header][type]" class="border rounded px-2 py-1 text-sm">@include('campaigns.var-options')</select>
-                <input name="variables[header][value]" placeholder="Field name or text" class="col-span-2 border rounded px-2 py-1 text-sm">
             </div>
-        </div>
-        <div id="body-vars" class="space-y-2"></div>
-
-        <div>
-            <span class="text-sm font-medium">Send to</span>
-            <label class="flex items-center gap-2 mt-1 text-sm"><input type="radio" name="audience" value="all" @checked(old('audience', 'groups') === 'all')> All subscribed contacts</label>
-            <label class="flex items-center gap-2 text-sm"><input type="radio" name="audience" value="groups" @checked(old('audience', 'groups') === 'groups')> These groups:</label>
-            <div class="ml-6 mt-1 flex flex-wrap gap-3">
-                @forelse ($groups as $g)
-                    <label class="text-sm flex items-center gap-1"><input type="checkbox" name="groups[]" value="{{ $g->id }}" @checked(in_array($g->id, old('groups', [])))> {{ $g->name }} ({{ $g->contacts_count }})</label>
-                @empty
-                    <span class="text-sm text-slate-500">No groups yet.</span>
-                @endforelse
+            <div data-aud="groups" class="aud-panel {{ $aud === 'groups' ? '' : 'hidden' }}">
+                <div class="flex flex-wrap gap-2">
+                    @forelse ($groups as $g)
+                        <label class="cursor-pointer inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700">
+                            <input type="checkbox" name="groups[]" value="{{ $g->id }}" class="accent-brand-600" @checked(in_array($g->id, old('groups', [])))> {{ $g->name }} <span class="opacity-60">({{ number_format($g->contacts_count) }})</span>
+                        </label>
+                    @empty
+                        <span class="text-sm text-slate-500">No lists yet. Use Paste numbers or Upload CSV.</span>
+                    @endforelse
+                </div>
             </div>
-        </div>
+            <div data-aud="paste" class="aud-panel space-y-2 {{ $aud === 'paste' ? '' : 'hidden' }}">
+                <textarea name="numbers" id="numbers" rows="6" placeholder="One number per line (number, name). 20,000+ numbers are fine." class="w-full border border-slate-200 rounded-xl px-3 py-2 font-mono text-xs">{{ old('numbers') }}</textarea>
+                <div class="text-xs text-slate-500"><span id="numbers-count">0</span> numbers found. They are saved as a new list named after this campaign.</div>
+            </div>
+            <div data-aud="csv" class="aud-panel space-y-2 {{ $aud === 'csv' ? '' : 'hidden' }}">
+                <input type="file" name="file" accept=".csv,text/csv" class="text-sm">
+                <div class="text-xs text-slate-500">Columns: phone (required), name, and any others you want as variables.</div>
+            </div>
+            <div data-aud="all" class="aud-panel text-sm text-slate-600 {{ $aud === 'all' ? '' : 'hidden' }}">Every subscribed contact in this business. Opted-out contacts are always skipped.</div>
+            <div id="upload-extra" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-center {{ in_array($aud, ['paste', 'csv']) ? '' : 'hidden' }}">
+                <input name="default_country_code" value="{{ old('default_country_code', '91') }}" placeholder="Country code" class="border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                <label class="md:col-span-2 flex gap-2 items-start text-xs text-slate-600"><input type="checkbox" name="consent" value="1" class="mt-0.5" @checked(old('consent'))> These people agreed to receive WhatsApp messages from my business.</label>
+            </div>
+        </section>
 
-        <div>
-            <span class="text-sm font-medium">When</span>
-            <label class="flex items-center gap-2 mt-1 text-sm"><input type="radio" name="send" value="now" checked> Send now</label>
-            <label class="flex items-center gap-2 text-sm"><input type="radio" name="send" value="later" @checked(old('send') === 'later')> Schedule:
-                <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at') }}" class="border rounded px-2 py-1"></label>
-            <p class="text-xs text-slate-500 mt-1">Times are in {{ config('app.timezone') }}.</p>
-        </div>
+        {{-- 3. Personalise --}}
+        <section id="personalise" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-4"><span class="w-7 h-7 rounded-full bg-brand-600 text-white grid place-items-center text-sm font-semibold">3</span><span class="font-semibold">Personalise variables</span></div>
+            <div id="header-var" class="hidden mb-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                    <span class="text-sm font-medium">Header variable</span>
+                    <select name="variables[header][type]" class="border border-slate-200 rounded-xl px-2 py-2 text-sm">@include('campaigns.var-options')</select>
+                    <input name="variables[header][value]" placeholder="Column name or text" class="border border-slate-200 rounded-xl px-2 py-2 text-sm">
+                </div>
+            </div>
+            <div id="body-vars" class="space-y-2"></div>
+            <div id="no-vars" class="text-sm text-slate-500 hidden">This template has no variables.</div>
+        </section>
 
-        <button class="rounded bg-brand-600 text-white px-5 py-2 font-semibold">Launch campaign</button>
+        {{-- 4. Schedule --}}
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-4"><span class="w-7 h-7 rounded-full bg-brand-600 text-white grid place-items-center text-sm font-semibold">4</span><span class="font-semibold">When to send</span></div>
+            <div class="flex flex-wrap items-center gap-4 text-sm">
+                <label class="flex items-center gap-2"><input type="radio" name="send" value="now" class="accent-brand-600" @checked(old('send', 'now') === 'now')> Send now</label>
+                <label class="flex items-center gap-2"><input type="radio" name="send" value="later" class="accent-brand-600" @checked(old('send') === 'later')> Schedule for</label>
+                <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at') }}" class="border border-slate-200 rounded-xl px-3 py-2">
+                <span class="text-xs text-slate-400">Timezone: {{ config('app.timezone') }}</span>
+            </div>
+        </section>
+
+        <x-btn class="w-full md:w-auto px-8 py-3" icon="send">Launch campaign</x-btn>
     </div>
 
-    <div>
-        <div class="text-sm font-medium mb-2">Preview</div>
-        <div class="rounded-xl bg-[#efeae2] p-4">
-            <div id="preview" class="rounded-lg bg-white p-3 text-sm whitespace-pre-line shadow"></div>
-        </div>
+    <div class="xl:sticky xl:top-28 self-start">
+        <div class="text-sm font-semibold text-slate-600 mb-3 text-center">Live preview</div>
+        <x-phone-preview :name="$accounts->first()?->verified_name ?? 'Your Business'" :number="$accounts->first()?->display_phone_number">
+            <div id="preview"></div>
+        </x-phone-preview>
     </div>
 </form>
 
@@ -73,31 +116,60 @@
     const templates = @json($templateMeta);
     const oldBody = @json(old('variables.body', []));
     const select = document.getElementById('template');
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+    const sample = { name: 'Ravi', phone: '919876543210', email: 'ravi@example.com' };
+
+    function bubble(t) {
+        let body = t.body;
+        document.querySelectorAll('#body-vars .var-row').forEach((row, i) => {
+            const type = row.querySelector('select').value, val = row.querySelector('.v').value, fb = row.querySelector('.f').value;
+            const shown = type === 'text' ? val : (type === 'field' ? (val ? '[' + val + ']' : '') : sample[type]);
+            body = body.split('\x7b\x7b' + (i + 1) + '\x7d\x7d').join(shown || fb || '\x7b\x7b' + (i + 1) + '\x7d\x7d');
+        });
+        const media = ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(t.header) ? `<div class="h-28 bg-slate-200 grid place-items-center text-xs text-slate-500">${t.header}</div>` : '';
+        return `<div class="max-w-[92%] rounded-lg rounded-tl-none bg-white shadow text-[13px] overflow-hidden">${media}
+            <div class="px-2.5 pt-2 pb-1">${t.headerText ? `<div class="font-semibold mb-1">${esc(t.headerText)}</div>` : ''}
+            <div class="whitespace-pre-line break-words">${esc(body)}</div>
+            ${t.footer ? `<div class="text-[11px] text-slate-500 mt-1">${esc(t.footer)}</div>` : ''}
+            <div class="text-right text-[10px] text-slate-400">now</div></div>
+            ${(t.buttons || []).map(b => `<div class="border-t text-center py-1.5 text-sky-600 font-medium">${esc(b)}</div>`).join('')}</div>`;
+    }
 
     function render() {
         const t = templates[select?.value];
         if (!t) return;
         document.getElementById('header-media').classList.toggle('hidden', !['IMAGE', 'VIDEO', 'DOCUMENT'].includes(t.header));
         document.getElementById('header-var').classList.toggle('hidden', !t.headerVars);
+        document.getElementById('no-vars').classList.toggle('hidden', t.vars > 0 || t.headerVars > 0);
         const box = document.getElementById('body-vars');
         box.innerHTML = '';
         for (let i = 0; i < t.vars; i++) {
             const row = document.createElement('div');
-            row.className = 'grid grid-cols-4 gap-2 items-center';
-            row.innerHTML = `<span class="text-sm font-medium">Variable ${i + 1}</span>
-                <select name="variables[body][${i}][type]" class="border rounded px-2 py-1 text-sm">${document.getElementById('var-options').innerHTML}</select>
-                <input name="variables[body][${i}][value]" placeholder="Field name or text" class="border rounded px-2 py-1 text-sm">
-                <input name="variables[body][${i}][fallback]" placeholder="If empty, use…" class="border rounded px-2 py-1 text-sm">`;
+            row.className = 'var-row grid grid-cols-1 md:grid-cols-4 gap-2 items-center';
+            row.innerHTML = `<span class="text-sm font-medium">Variable <code class="text-brand-700">{{ '{' }}{${i + 1}}}</code></span>
+                <select name="variables[body][${i}][type]" class="border border-slate-200 rounded-xl px-2 py-2 text-sm">${document.getElementById('var-options').innerHTML}</select>
+                <input name="variables[body][${i}][value]" placeholder="Column name or text" class="v border border-slate-200 rounded-xl px-2 py-2 text-sm">
+                <input name="variables[body][${i}][fallback]" placeholder="If empty, use…" class="f border border-slate-200 rounded-xl px-2 py-2 text-sm">`;
             if (oldBody[i]) {
                 row.querySelector('select').value = oldBody[i].type;
-                row.querySelector('input').value = oldBody[i].value || '';
+                row.querySelector('.v').value = oldBody[i].value || '';
+                row.querySelector('.f').value = oldBody[i].fallback || '';
             }
+            row.addEventListener('input', () => preview(t));
             box.appendChild(row);
         }
-        let text = (t.headerText ? t.headerText + '\n\n' : (t.header ? '[' + t.header + ']\n\n' : '')) + t.body + (t.footer ? '\n\n' + t.footer : '');
-        document.getElementById('preview').textContent = text;
+        preview(t);
     }
+    const preview = t => document.getElementById('preview').innerHTML = bubble(t);
     select?.addEventListener('change', render);
     render();
+
+    document.querySelectorAll('.aud-opt input').forEach(r => r.addEventListener('change', () => {
+        document.querySelectorAll('.aud-opt').forEach(l => l.className = 'aud-opt cursor-pointer flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium ' + (l.querySelector('input').checked ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200'));
+        document.querySelectorAll('.aud-panel').forEach(p => p.classList.toggle('hidden', p.dataset.aud !== r.value));
+        document.getElementById('upload-extra').classList.toggle('hidden', !['paste', 'csv'].includes(r.value));
+    }));
+    const numbers = document.getElementById('numbers'), counter = document.getElementById('numbers-count');
+    if (numbers) { const c = () => counter.textContent = (numbers.value.match(/\+?\d[\d\s\-().]{6,}\d/g) || []).length.toLocaleString(); numbers.addEventListener('input', c); c(); }
 </script>
 @endpush

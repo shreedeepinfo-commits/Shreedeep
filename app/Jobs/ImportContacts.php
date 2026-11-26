@@ -90,7 +90,11 @@ class ImportContacts implements ShouldQueue
         $import->update(['imported' => $imported, 'skipped' => $skipped]);
     }
 
-    /** @param array<string, array> $batch keyed by phone */
+    /**
+     * Bulk upsert one batch (a few queries per 500 rows, so 20k+ numbers import in seconds).
+     *
+     * @param  array<string, array>  $batch  keyed by phone
+     */
     private function save(ContactImport $import, array $batch): int
     {
         if (! $batch) {
@@ -98,24 +102,37 @@ class ImportContacts implements ShouldQueue
         }
 
         return DB::transaction(function () use ($import, $batch) {
-            $ids = [];
+            $phones = array_map('strval', array_keys($batch));
+            $existing = Contact::withoutGlobalScopes()->where('workspace_id', $import->workspace_id)
+                ->whereIn('phone', $phones)->get()->keyBy('phone');
+            $now = now();
+
+            $rows = [];
             foreach ($batch as $phone => $data) {
-                $contact = Contact::withoutGlobalScopes()->firstOrNew(['workspace_id' => $import->workspace_id, 'phone' => (string) $phone]);
-                $contact->name = $data['name'] ?: $contact->name;
-                $contact->email = $data['email'] ?: $contact->email;
-                $contact->fields = array_merge($contact->fields ?? [], $data['fields']);
-                if (! $contact->opted_in_at && $import->opt_in_source) {
-                    $contact->opted_in_at = now();
-                    $contact->opt_in_source = $import->opt_in_source;
-                }
-                $contact->save();
-                $ids[] = $contact->id;
+                $old = $existing[(string) $phone] ?? null;
+                $optedIn = $old?->opted_in_at ?? ($import->opt_in_source ? $now : null);
+                $rows[] = [
+                    'workspace_id' => $import->workspace_id,
+                    'phone' => (string) $phone,
+                    'name' => ($data['name'] ?? null) ?: $old?->name,
+                    'email' => ($data['email'] ?? null) ?: $old?->email,
+                    'fields' => json_encode(array_merge($old?->fields ?? [], $data['fields'] ?? []) ?: null),
+                    'opted_in_at' => $optedIn,
+                    'opt_in_source' => $old?->opt_in_source ?? $import->opt_in_source,
+                    'created_at' => $old?->created_at ?? $now,
+                    'updated_at' => $now,
+                ];
             }
+            Contact::withoutGlobalScopes()->upsert($rows, ['workspace_id', 'phone'], ['name', 'email', 'fields', 'opted_in_at', 'opt_in_source', 'updated_at']);
+
             if ($import->contact_group_id) {
-                $import->group()->withoutGlobalScopes()->first()?->contacts()->syncWithoutDetaching($ids);
+                $ids = Contact::withoutGlobalScopes()->where('workspace_id', $import->workspace_id)->whereIn('phone', $phones)->pluck('id');
+                DB::table('contact_contact_group')->insertOrIgnore(
+                    $ids->map(fn ($id) => ['contact_id' => $id, 'contact_group_id' => $import->contact_group_id])->all()
+                );
             }
 
-            return count($ids);
+            return count($rows);
         });
     }
 }

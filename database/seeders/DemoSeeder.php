@@ -46,6 +46,11 @@ class DemoSeeder extends Seeder
             'components' => [['type' => 'BODY', 'text' => 'Hi {{1}}, your order {{2}} has been shipped.']],
         ]);
 
+        MessageTemplate::withoutGlobalScopes()->firstOrCreate(['whatsapp_account_id' => $account->id, 'name' => 'flash_sale', 'language' => 'en'], [
+            'workspace_id' => $ws, 'category' => 'MARKETING', 'status' => 'REJECTED', 'rejected_reason' => 'INVALID_FORMAT',
+            'components' => [['type' => 'BODY', 'text' => '{{1}} FLASH SALE!!! Click now {{2}}']],
+        ]);
+
         if (Contact::withoutGlobalScopes()->where('workspace_id', $ws)->exists()) {
             return;
         }

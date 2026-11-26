@@ -41,6 +41,7 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::delete('/whatsapp/{account}', [WhatsappAccountController::class, 'destroy'])->name('whatsapp.destroy');
 
     Route::post('/contacts/import', [ContactController::class, 'import'])->name('contacts.import');
+    Route::post('/contacts/paste', [ContactController::class, 'paste'])->name('contacts.paste');
     Route::resource('contacts', ContactController::class)->except('show');
     Route::post('/groups', [ContactGroupController::class, 'store'])->name('groups.store');
     Route::delete('/groups/{group}', [ContactGroupController::class, 'destroy'])->name('groups.destroy');
