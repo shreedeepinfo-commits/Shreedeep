@@ -37,7 +37,7 @@ class LayoutTest extends TestCase
         foreach (array_keys(\App\Http\Controllers\ComingSoonController::FEATURES) as $key) {
             $this->actingAs($user)->get("/soon/{$key}")->assertOk()->assertSee('What you will get');
         }
-        $this->get('/soon/subscription')->assertSee('Razorpay');
+        $this->get('/soon/integrations')->assertSee('Shopify');
         $this->get('/soon/nope')->assertNotFound();
     }
 

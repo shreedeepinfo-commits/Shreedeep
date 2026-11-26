@@ -22,10 +22,6 @@ class ComingSoonController extends Controller
             'Date-wise message reports', 'Campaign performance', 'Messaging consumption by category',
             'Agent performance', 'Downloadable reports',
         ]],
-        'subscription' => ['Subscription', 'Your plan, renewals and invoices.', 'card', 'Phase 7', [
-            'Monthly, quarterly and annual plans', 'Free trial', 'Plan upgrade and downgrade', 'Extra agents and numbers',
-            'Pay with Razorpay or Cashfree', 'GST invoices', 'Renewal and expiry reminders',
-        ]],
         'support' => ['Help & Support', 'Guides, FAQs and support tickets.', 'help', 'Phase 10', [
             'Raise and track support tickets', 'Step-by-step setup guides', 'FAQs', 'Contact support',
         ]],

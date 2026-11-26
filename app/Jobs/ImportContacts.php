@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Contact;
 use App\Models\ContactImport;
+use App\Models\Workspace;
 use App\Support\Phone;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,6 +20,9 @@ class ImportContacts implements ShouldQueue
     public int $timeout = 1800;
 
     private const PHONE_HEADERS = ['phone', 'mobile', 'number', 'phone number', 'mobile number', 'whatsapp', 'whatsapp number', 'contact'];
+
+    /** New numbers left out because the plan's contact limit was reached. */
+    private int $overLimit = 0;
 
     public function __construct(public int $importId)
     {
@@ -87,7 +91,10 @@ class ImportContacts implements ShouldQueue
         }
         fclose($handle);
         $imported += $this->save($import, $batch);
-        $import->update(['imported' => $imported, 'skipped' => $skipped]);
+        $import->update(array_filter([
+            'imported' => $imported, 'skipped' => $skipped + $this->overLimit,
+            'error' => $this->overLimit ? number_format($this->overLimit).' new numbers were not added: your plan\'s contact limit is reached. Upgrade to add more.' : null,
+        ], fn ($v) => $v !== null));
     }
 
     /**
@@ -106,6 +113,19 @@ class ImportContacts implements ShouldQueue
             $existing = Contact::withoutGlobalScopes()->where('workspace_id', $import->workspace_id)
                 ->whereIn('phone', $phones)->get()->keyBy('phone');
             $now = now();
+
+            // Respect the plan's contact limit: only as many new numbers as there is room for.
+            $room = Workspace::find($import->workspace_id)?->remaining('contacts');
+            if ($room !== null) {
+                $new = array_values(array_filter($phones, fn ($p) => ! isset($existing[$p])));
+                foreach (array_slice($new, $room) as $drop) {
+                    unset($batch[$drop]);
+                    $this->overLimit++;
+                }
+                if (! $batch) {
+                    return 0;
+                }
+            }
 
             $rows = [];
             foreach ($batch as $phone => $data) {

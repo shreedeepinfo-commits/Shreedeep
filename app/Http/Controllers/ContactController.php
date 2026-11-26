@@ -144,6 +144,9 @@ class ContactController extends Controller
 
     public function store(Request $request)
     {
+        if ($limit = $this->planLimitReached('contacts', 1, 'phone')) {
+            return $limit;
+        }
         $contact = Contact::create($this->validated($request));
         $contact->groups()->sync($this->groupIds($request));
 
@@ -184,6 +187,9 @@ class ContactController extends Controller
             'consent' => ['accepted'],
             'opt_in_source' => ['required', 'string', 'max:255'],
         ], ['consent.accepted' => 'Please confirm these contacts agreed to receive WhatsApp messages from you.']);
+        if ($limit = $this->planLimitReached('contacts', 1, 'file')) {
+            return $limit;
+        }
 
         $groupId = $data['contact_group_id'] ?? null;
         if (! empty($data['new_group'])) {
@@ -224,6 +230,9 @@ class ContactController extends Controller
             'consent' => ['accepted'],
         ], ['consent.accepted' => 'Please confirm these contacts agreed to receive WhatsApp messages from you.']);
 
+        if ($limit = $this->planLimitReached('contacts', 1, 'numbers')) {
+            return $limit;
+        }
         $count = count(PastedNumbers::parse($data['numbers']));
         if ($count === 0) {
             return back()->withErrors(['numbers' => 'No phone numbers found in the pasted text.'])->withInput();

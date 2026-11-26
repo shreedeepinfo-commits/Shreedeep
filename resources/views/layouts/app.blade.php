@@ -29,7 +29,7 @@
         'Business' => [
             ['Team Management', 'team.index', 'team'],
             ['Analytics', ['soon', 'analytics'], 'chart'],
-            ['Subscription', ['soon', 'subscription'], 'card'],
+            ['Subscription', 'subscription.index', 'card'],
             ['WhatsApp Settings', 'whatsapp.index', 'cog'],
             ['Help & Support', ['soon', 'support'], 'help'],
         ],
@@ -139,6 +139,22 @@
         </header>
 
         <main class="p-4 lg:p-8">
+            @if ($currentWorkspace ?? null)
+                @php $daysLeft = $currentWorkspace->daysLeft(); @endphp
+                @if ($currentWorkspace->isExpired())
+                    <div class="mb-5 rounded-xl bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm flex flex-wrap items-center gap-3">
+                        <x-icon name="card" class="w-5 h-5" />
+                        <span class="flex-1"><b>Your {{ $currentWorkspace->plan_ends_at ? 'plan' : 'free trial' }} has ended.</b> You can still see everything, but sending and changes are paused until you renew.</span>
+                        @if ($isManager ?? false)<a href="{{ route('subscription.index') }}" class="font-semibold underline">Renew now</a>@endif
+                    </div>
+                @elseif ($daysLeft <= 7 && ! request()->routeIs('subscription.*'))
+                    <div class="mb-5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 text-sm flex flex-wrap items-center gap-3">
+                        <x-icon name="clock" class="w-5 h-5" />
+                        <span class="flex-1">{{ $currentWorkspace->planName() }} ends in <b>{{ $daysLeft }} {{ \Illuminate\Support\Str::plural('day', $daysLeft) }}</b> ({{ $currentWorkspace->accessEndsAt()->format('d M Y') }}).</span>
+                        @if ($isManager ?? false)<a href="{{ route('subscription.index') }}" class="font-semibold underline">{{ $currentWorkspace->onTrial() ? 'Choose a plan' : 'Renew' }}</a>@endif
+                    </div>
+                @endif
+            @endif
             @if (session('status'))
                 <div class="mb-5 rounded-xl bg-brand-50 border border-brand-100 text-brand-800 px-4 py-3 text-sm">{{ session('status') }}</div>
             @endif
