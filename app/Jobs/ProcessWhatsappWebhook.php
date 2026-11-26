@@ -9,6 +9,7 @@ use App\Models\Message;
 use App\Models\MessageTemplate;
 use App\Models\WebhookEvent;
 use App\Models\WhatsappAccount;
+use App\Services\Flows\FlowEngine;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
@@ -162,6 +163,11 @@ class ProcessWhatsappWebhook implements ShouldQueue
         $message->save();
 
         MessageReceived::dispatch($message);
+
+        // Chatbot flows (not for opt-out/opt-in keywords).
+        if (! in_array($keyword, self::OPT_OUT_WORDS, true) && ! in_array($keyword, self::OPT_IN_WORDS, true)) {
+            app(FlowEngine::class)->handle($account, $contact, $in, $type === 'text' ? $body : ($in['interactive']['button_reply']['title'] ?? $in['interactive']['list_reply']['title'] ?? $in['button']['text'] ?? ''));
+        }
     }
 
     private function handleTemplateStatus(array $value): void

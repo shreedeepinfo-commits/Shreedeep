@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 class ComingSoonController extends Controller
 {
     public const FEATURES = [
-        'flows' => ['Flow Builder', 'Build chat flows with buttons and lists that reply automatically.', 'flow'],
         'drip' => ['Drip Campaign', 'Send a series of template messages over days, e.g. day 0 welcome, day 3 offer.', 'clock'],
         'bots' => ['Bot Responder', 'Auto-reply to keywords like "price", "hi" or "help".', 'bot'],
         'team' => ['User Management', 'Invite team members as admin or agent and assign chats.', 'team'],

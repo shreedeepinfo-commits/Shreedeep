@@ -106,4 +106,39 @@ class CloudApi
 
         return $this->sendMessage($phoneNumberId, ['to' => $to, 'type' => 'template', 'template' => $template]);
     }
+
+    /** Reply buttons (max 3, title <= 20 chars). $buttons = [[id, title], ...] */
+    public function sendButtons(string $phoneNumberId, string $to, string $body, array $buttons): array
+    {
+        return $this->sendMessage($phoneNumberId, [
+            'recipient_type' => 'individual',
+            'to' => $to,
+            'type' => 'interactive',
+            'interactive' => [
+                'type' => 'button',
+                'body' => ['text' => $body],
+                'action' => ['buttons' => array_map(fn ($b) => ['type' => 'reply', 'reply' => ['id' => $b[0], 'title' => $b[1]]], $buttons)],
+            ],
+        ]);
+    }
+
+    /** List menu (max 10 rows, title <= 24 chars). $rows = [[id, title, description|null], ...] */
+    public function sendList(string $phoneNumberId, string $to, string $body, string $button, array $rows): array
+    {
+        return $this->sendMessage($phoneNumberId, [
+            'recipient_type' => 'individual',
+            'to' => $to,
+            'type' => 'interactive',
+            'interactive' => [
+                'type' => 'list',
+                'body' => ['text' => $body],
+                'action' => [
+                    'button' => $button,
+                    'sections' => [['title' => mb_substr($button, 0, 24), 'rows' => array_map(fn ($r) => array_filter([
+                        'id' => $r[0], 'title' => $r[1], 'description' => $r[2] ?? null,
+                    ]), $rows)]],
+                ],
+            ],
+        ]);
+    }
 }

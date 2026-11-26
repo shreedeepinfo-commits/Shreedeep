@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
@@ -57,6 +58,10 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::post('/campaigns/{campaign}/resume', [CampaignController::class, 'resume'])->name('campaigns.resume');
     Route::post('/campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
     Route::get('/campaigns/{campaign}/export', [CampaignController::class, 'export'])->name('campaigns.export');
+
+    Route::resource('flows', FlowController::class)->except('show');
+    Route::post('/flows/{flow}/toggle', [FlowController::class, 'toggle'])->name('flows.toggle');
+    Route::post('/flows/{flow}/duplicate', [FlowController::class, 'duplicate'])->name('flows.duplicate');
 
     Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
     Route::get('/inbox/{contact}', [InboxController::class, 'index'])->name('inbox.show');
