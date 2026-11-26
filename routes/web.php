@@ -10,6 +10,7 @@ use App\Http\Controllers\ContactGroupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InboxController;
+use App\Http\Controllers\QuickReplyController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
 use App\Http\Controllers\Webhooks\WhatsappWebhookController;
@@ -64,6 +65,14 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::post('/flows/{flow}/duplicate', [FlowController::class, 'duplicate'])->name('flows.duplicate');
 
     Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+    Route::get('/inbox/poll', [InboxController::class, 'poll'])->name('inbox.poll');
+    Route::get('/inbox/media/{message}', [InboxController::class, 'media'])->name('inbox.media');
+    Route::resource('quick-replies', QuickReplyController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('/inbox/{contact}', [InboxController::class, 'index'])->name('inbox.show');
     Route::post('/inbox/{contact}', [InboxController::class, 'reply'])->name('inbox.reply');
+    Route::post('/inbox/{contact}/assign', [InboxController::class, 'assign'])->name('inbox.assign');
+    Route::post('/inbox/{contact}/status', [InboxController::class, 'status'])->name('inbox.status');
+    Route::post('/inbox/{contact}/tags', [InboxController::class, 'tags'])->name('inbox.tags');
+    Route::post('/inbox/{contact}/notes', [InboxController::class, 'note'])->name('inbox.notes.store');
+    Route::delete('/inbox/{contact}/notes/{note}', [InboxController::class, 'destroyNote'])->name('inbox.notes.destroy');
 });
