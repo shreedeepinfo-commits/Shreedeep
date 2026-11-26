@@ -19,7 +19,7 @@
             ['WhatsApp Numbers', 'whatsapp.index', 'whatsapp'],
         ],
         'Automate' => [
-            ['Flow Builder', ['soon', 'flows'], 'flow'],
+            ['Flow Builder', 'flows.index', 'flow'],
             ['Drip Campaign', ['soon', 'drip'], 'clock'],
             ['Bot Responder', ['soon', 'bots'], 'bot'],
         ],

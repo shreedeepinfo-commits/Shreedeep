@@ -5,10 +5,12 @@ namespace Database\Seeders;
 use App\Models\Campaign;
 use App\Models\Contact;
 use App\Models\ContactGroup;
+use App\Models\Flow;
 use App\Models\Message;
 use App\Models\MessageTemplate;
 use App\Models\User;
 use App\Models\WhatsappAccount;
+use App\Services\Flows\FlowStarters;
 use Illuminate\Database\Seeder;
 
 /**
@@ -100,5 +102,13 @@ class DemoSeeder extends Seeder
             $m->save();
             $c->update(['last_message_at' => $m->created_at]);
         }
+
+        Flow::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'name' => 'Real estate enquiry'], [
+            'triggers' => ['hi', 'hello', 'property'], 'status' => 'active',
+            'definition' => FlowStarters::definition('real_estate'), 'triggered_count' => 42, 'completed_count' => 27,
+        ]);
+        Flow::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'name' => 'Shop menu'], [
+            'triggers' => ['menu'], 'status' => 'draft', 'definition' => FlowStarters::definition('store'),
+        ]);
     }
 }
