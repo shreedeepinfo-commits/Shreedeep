@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Campaign;
+use App\Models\Automation;
 use App\Models\Contact;
 use App\Models\ContactGroup;
 use App\Models\Flow;
@@ -131,6 +132,24 @@ class DemoSeeder extends Seeder
             'thanks' => "Thank you for contacting us! 🙏 Have a great day.",
         ] as $shortcut => $text) {
             QuickReply::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'shortcut' => $shortcut], ['body' => $text]);
+        }
+
+        // Sample automations (only once). Scheduled ones start switched off so demo numbers get nothing.
+        if (! Automation::withoutGlobalScopes()->where('workspace_id', $ws)->exists()) {
+            $auto = fn (string $type, string $name, bool $active, array $config, int $sent = 0) => Automation::withoutGlobalScopes()->create(
+                ['workspace_id' => $ws, 'type' => $type, 'name' => $name, 'active' => $active, 'config' => $config, 'sent_count' => $sent]);
+            $auto('welcome', 'Welcome message', true, ['message' => "Hi {{name}}! 👋 Welcome to Shree Deep Infotech. Type *menu* to see what we offer."], 128);
+            $auto('away', 'Away message', true, ['message' => "Thanks for your message! We are closed now and will reply when we open at 10 AM.", 'timezone' => Automation::DEFAULT_TIMEZONE, 'hours' => Automation::defaultHours()], 37);
+            $auto('keyword', 'Price enquiry', true, ['keywords' => ['price', 'rate', 'cost'], 'match' => 'contains', 'reply' => "Our plans start at ₹999 per month. Reply *demo* to book a free demo."], 64);
+            $auto('keyword', 'Location', true, ['keywords' => ['address', 'location'], 'match' => 'contains', 'reply' => "We are at Main Road. Open 10 AM to 7 PM, Monday to Saturday."], 19);
+            $template = MessageTemplate::withoutGlobalScopes()->where('workspace_id', $ws)->where('status', 'APPROVED')->first();
+            if ($template) {
+                $step = ['template_id' => $template->id, 'variables' => ['body' => [['type' => 'name', 'fallback' => 'there']]], 'header_media_url' => null];
+                $auto('drip', 'New lead nurture', false, ['audience' => ['groups' => [], 'tags' => ['hot lead']], 'enroll_new' => true, 'steps' => [
+                    $step + ['delay_days' => 0, 'delay_hours' => 1], $step + ['delay_days' => 2, 'delay_hours' => 0], $step + ['delay_days' => 5, 'delay_hours' => 0],
+                ]]);
+                $auto('date', 'Birthday wishes', false, $step + ['field' => 'birthday', 'days_before' => 0, 'time' => '09:00', 'yearly' => true, 'timezone' => Automation::DEFAULT_TIMEZONE]);
+            }
         }
 
         // Sample CRM data (only once).

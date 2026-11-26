@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\WorkspaceController;
@@ -108,6 +109,9 @@ Route::middleware(['auth', 'workspace'])->group(function () {
         Route::resource('flows', FlowController::class)->except('show');
         Route::post('/flows/{flow}/toggle', [FlowController::class, 'toggle'])->name('flows.toggle');
         Route::post('/flows/{flow}/duplicate', [FlowController::class, 'duplicate'])->name('flows.duplicate');
+
+        Route::resource('automations', AutomationController::class)->except('show');
+        Route::post('/automations/{automation}/toggle', [AutomationController::class, 'toggle'])->name('automations.toggle');
 
         Route::resource('quick-replies', QuickReplyController::class)->only(['store', 'update', 'destroy']);
 

@@ -7,11 +7,6 @@ class ComingSoonController extends Controller
 {
     /** key => [title, description, icon, roadmap phase, planned features] */
     public const FEATURES = [
-        'automations' => ['Automations', 'Messages that go out on their own at the right time.', 'bolt', 'Phase 6', [
-            'Welcome and away messages', 'Business hours automation', 'Keyword-based auto replies',
-            'Drip marketing campaigns', 'Automated follow-ups', 'Appointment and payment reminders',
-            'Birthday and anniversary wishes', 'Abandoned cart recovery',
-        ]],
         'whatsapp-flows' => ['WhatsApp Flows', 'Meta WhatsApp Flows: forms, bookings and lead capture inside WhatsApp.', 'form', 'Later', [
             'Create and publish Meta Flows', 'Lead forms and appointment booking', 'Send Flows in templates and chats', 'See submitted responses',
         ]],
