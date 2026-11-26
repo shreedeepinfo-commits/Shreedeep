@@ -6,6 +6,7 @@ use App\Jobs\ImportContacts;
 use App\Models\Contact;
 use App\Models\ContactGroup;
 use App\Models\ContactImport;
+use App\Support\PastedNumbers;
 use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,12 @@ class ContactController extends Controller
             'contacts' => $contacts,
             'groups' => ContactGroup::withCount('contacts')->orderBy('name')->get(),
             'imports' => ContactImport::latest()->limit(5)->get(),
+            'stats' => [
+                'total' => Contact::count(),
+                'subscribed' => Contact::subscribed()->count(),
+                'optedOut' => Contact::whereNotNull('opted_out_at')->count(),
+                'lists' => ContactGroup::count(),
+            ],
         ]);
     }
 
@@ -91,6 +98,36 @@ class ContactController extends Controller
         ImportContacts::dispatch($import->id);
 
         return redirect()->route('contacts.index')->with('status', 'Import started. Refresh in a moment to see the result.');
+    }
+
+    /** Create (or add to) a named list from pasted numbers. Handles 20k+ numbers via the import job. */
+    public function paste(Request $request)
+    {
+        $data = $request->validate([
+            'list_name' => ['required', 'string', 'max:255'],
+            'numbers' => ['required', 'string', 'max:2000000'],
+            'default_country_code' => ['nullable', 'regex:/^\+?\d{1,4}$/'],
+            'opt_in_source' => ['required', 'string', 'max:255'],
+            'consent' => ['accepted'],
+        ], ['consent.accepted' => 'Please confirm these contacts agreed to receive WhatsApp messages from you.']);
+
+        $count = count(PastedNumbers::parse($data['numbers']));
+        if ($count === 0) {
+            return back()->withErrors(['numbers' => 'No phone numbers found in the pasted text.'])->withInput();
+        }
+
+        $group = ContactGroup::firstOrCreate(['name' => $data['list_name']]);
+        $import = ContactImport::create([
+            'contact_group_id' => $group->id,
+            'path' => PastedNumbers::toCsv($data['numbers']),
+            'original_name' => 'Pasted list: '.$group->name,
+            'default_country_code' => isset($data['default_country_code']) ? ltrim($data['default_country_code'], '+') : null,
+            'opt_in_source' => $data['opt_in_source'],
+        ]);
+        ImportContacts::dispatch($import->id);
+
+        return redirect()->route('contacts.index', ['group' => $group->id])
+            ->with('status', "Adding {$count} numbers to the list \"{$group->name}\". Refresh in a moment to see them.");
     }
 
     private function validated(Request $request, ?Contact $contact = null): array

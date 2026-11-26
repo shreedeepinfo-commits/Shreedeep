@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ImportContacts;
 use App\Jobs\StartCampaign;
 use App\Models\Campaign;
 use App\Models\ContactGroup;
+use App\Models\ContactImport;
 use App\Models\Message;
 use App\Models\MessageTemplate;
 use App\Models\WhatsappAccount;
 use App\Services\Campaigns\CampaignLauncher;
 use App\Support\CurrentWorkspace;
+use App\Support\PastedNumbers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -17,14 +20,33 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CampaignController extends Controller
 {
-    public function index()
+    public const TABS = ['all' => 'All', 'running' => 'Sending', 'completed' => 'Sent', 'scheduled' => 'Scheduled', 'paused' => 'Paused', 'cancelled' => 'Cancelled'];
+
+    public function index(Request $request)
     {
-        $campaigns = Campaign::with(['template', 'whatsappAccount'])->latest()->paginate(20);
+        $tab = array_key_exists($request->query('tab'), self::TABS) ? $request->query('tab') : 'all';
+        $tabCounts = Campaign::selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
+        $tabCounts['all'] = $tabCounts->sum();
+
+        $campaigns = Campaign::with(['template', 'whatsappAccount'])
+            ->when($tab !== 'all', fn ($q) => $q->where('status', $tab))
+            ->when($request->query('q'), fn ($q, $t) => $q->where('name', 'like', "%{$t}%"))
+            ->latest()->paginate(20)->withQueryString();
+
+        $monthStart = now()->startOfMonth();
+        $kpis = [
+            'total' => Campaign::count(),
+            'thisMonth' => Campaign::where('created_at', '>=', $monthStart)->count(),
+            'sentThisMonth' => Message::where('direction', 'out')->whereNotNull('campaign_id')->where('created_at', '>=', $monthStart)->whereNotIn('status', ['queued', 'failed'])->count(),
+            'scheduled' => Campaign::where('status', 'scheduled')->count(),
+            'attention' => Campaign::where('status', 'paused')->count()
+                + Campaign::whereHas('messages', fn ($q) => $q->where('status', 'failed'))->whereNotIn('status', ['paused'])->count(),
+        ];
         $counts = Message::whereIn('campaign_id', $campaigns->pluck('id'))
             ->selectRaw('campaign_id, status, count(*) as c')->groupBy('campaign_id', 'status')->get()
             ->groupBy('campaign_id')->map(fn ($rows) => $rows->pluck('c', 'status'));
 
-        return view('campaigns.index', compact('campaigns', 'counts'));
+        return view('campaigns.index', compact('campaigns', 'counts', 'tab', 'tabCounts', 'kpis'));
     }
 
     public function create()
@@ -41,6 +63,7 @@ class CampaignController extends Controller
                 'headerText' => $t->component('HEADER')['text'] ?? null,
                 'headerVars' => $t->headerVariableCount(),
                 'footer' => $t->component('FOOTER')['text'] ?? null,
+                'buttons' => array_column($t->component('BUTTONS')['buttons'] ?? [], 'text'),
             ]]),
             'groups' => ContactGroup::withCount(['contacts' => fn ($q) => $q->whereNull('opted_out_at')])->orderBy('name')->get(),
         ]);
@@ -52,7 +75,11 @@ class CampaignController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'message_template_id' => ['required', Rule::exists('message_templates', 'id')->where('workspace_id', $ws)->where('status', 'APPROVED')],
-            'audience' => ['required', 'in:all,groups'],
+            'audience' => ['required', 'in:all,groups,paste,csv'],
+            'numbers' => ['required_if:audience,paste', 'nullable', 'string', 'max:2000000'],
+            'file' => ['required_if:audience,csv', 'nullable', 'file', 'mimes:csv,txt', 'max:20480'],
+            'default_country_code' => ['nullable', 'regex:/^\+?\d{1,4}$/'],
+            'consent' => ['required_if:audience,paste,csv', 'nullable', 'in:1,on,yes,true'],
             'groups' => ['required_if:audience,groups', 'array'],
             'groups.*' => [Rule::exists('contact_groups', 'id')->where('workspace_id', $ws)],
             'variables.body' => ['nullable', 'array'],
@@ -64,11 +91,26 @@ class CampaignController extends Controller
             'header_media_url' => ['nullable', 'url', 'max:2000'],
             'send' => ['required', 'in:now,later'],
             'scheduled_at' => ['required_if:send,later', 'nullable', 'date', 'after:now'],
-        ]);
+        ], ['consent.required_if' => 'Please confirm these people agreed to receive WhatsApp messages from you.']);
 
         $template = MessageTemplate::findOrFail($data['message_template_id']);
         if (in_array($template->headerFormat(), ['IMAGE', 'VIDEO', 'DOCUMENT'], true) && empty($data['header_media_url'])) {
             return back()->withErrors(['header_media_url' => 'This template needs a header '.strtolower($template->headerFormat()).' link.'])->withInput();
+        }
+
+        // Paste / CSV audience: build a list named after the campaign first (bulk import, 20k+ is fine).
+        if (in_array($data['audience'], ['paste', 'csv'], true)) {
+            $group = ContactGroup::firstOrCreate(['name' => $data['name'].' list']);
+            $import = ContactImport::create([
+                'contact_group_id' => $group->id,
+                'path' => $data['audience'] === 'paste' ? PastedNumbers::toCsv($data['numbers']) : $request->file('file')->store('imports'),
+                'original_name' => $data['audience'] === 'paste' ? 'Pasted for campaign: '.$data['name'] : $request->file('file')->getClientOriginalName(),
+                'default_country_code' => ltrim($data['default_country_code'] ?? '91', '+'),
+                'opt_in_source' => 'campaign upload',
+            ]);
+            ImportContacts::dispatchSync($import->id);
+            $data['audience'] = 'groups';
+            $data['groups'] = [$group->id];
         }
 
         $campaign = DB::transaction(function () use ($data, $template, $launcher) {

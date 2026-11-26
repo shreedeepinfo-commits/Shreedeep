@@ -11,13 +11,33 @@ use Illuminate\Validation\Rule;
 
 class TemplateController extends Controller
 {
+    public const TABS = ['all' => 'All', 'APPROVED' => 'Approved', 'PENDING' => 'Pending', 'REJECTED' => 'Rejected'];
+
     public function index(Request $request)
     {
+        $status = array_key_exists($request->query('status'), self::TABS) ? $request->query('status') : 'all';
+        $counts = MessageTemplate::selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
+
+        $templates = MessageTemplate::with('whatsappAccount')
+            ->when($status === 'REJECTED', fn ($q) => $q->whereIn('status', ['REJECTED', 'PAUSED', 'DISABLED']))
+            ->when(! in_array($status, ['all', 'REJECTED'], true), fn ($q) => $q->where('status', $status))
+            ->when($request->query('category'), fn ($q, $c) => $q->where('category', $c))
+            ->when($request->query('q'), fn ($q, $t) => $q->where(fn ($q) => $q->where('name', 'like', "%{$t}%")->orWhere('components', 'like', "%{$t}%")))
+            ->latest('updated_at')->get();
+
+        $selected = $templates->firstWhere('id', (int) $request->query('t')) ?? $templates->first();
+
         return view('templates.index', [
-            'templates' => MessageTemplate::with('whatsappAccount')
-                ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
-                ->orderBy('name')->get(),
+            'templates' => $templates,
+            'selected' => $selected,
+            'status' => $status,
             'accounts' => WhatsappAccount::all(),
+            'kpis' => [
+                'approved' => (int) ($counts['APPROVED'] ?? 0),
+                'pending' => (int) ($counts['PENDING'] ?? 0) + (int) ($counts['IN_APPEAL'] ?? 0),
+                'rejected' => (int) ($counts['REJECTED'] ?? 0) + (int) ($counts['PAUSED'] ?? 0) + (int) ($counts['DISABLED'] ?? 0),
+                'total' => (int) $counts->sum(),
+            ],
         ]);
     }
 

@@ -87,7 +87,7 @@ class CampaignsTest extends TestCase
             && array_column($r['template']['components'][0]['parameters'], 'text') === ['friend', '20%', 'your city']);
         $this->assertSame('Hi Ravi, 20% off in Pune', Message::where('phone', '919000000001')->value('body'));
 
-        $this->get("/campaigns/{$campaign->id}")->assertOk()->assertSee('completed');
+        $this->get("/campaigns/{$campaign->id}")->assertOk()->assertSee('Sent');
         $this->get('/campaigns')->assertOk()->assertSee('Diwali');
     }
 
