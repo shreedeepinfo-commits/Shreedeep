@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
             prepend: \App\Http\Middleware\SetCurrentWorkspace::class,
         );
+        $middleware->preventRequestForgery(except: ['webhooks/*']);
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/dashboard');
     })

@@ -6,11 +6,17 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
+use App\Http\Controllers\Webhooks\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('welcome'));
+
+// Meta WhatsApp webhook (set this URL in the Meta app dashboard). CSRF is disabled for it in bootstrap/app.php.
+Route::get('/webhooks/whatsapp', [WhatsappWebhookController::class, 'verify']);
+Route::post('/webhooks/whatsapp', [WhatsappWebhookController::class, 'receive'])->name('webhooks.whatsapp');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
@@ -46,4 +52,8 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::post('/campaigns/{campaign}/resume', [CampaignController::class, 'resume'])->name('campaigns.resume');
     Route::post('/campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
     Route::get('/campaigns/{campaign}/export', [CampaignController::class, 'export'])->name('campaigns.export');
+
+    Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+    Route::get('/inbox/{contact}', [InboxController::class, 'index'])->name('inbox.show');
+    Route::post('/inbox/{contact}', [InboxController::class, 'reply'])->name('inbox.reply');
 });
