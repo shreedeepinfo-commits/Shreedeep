@@ -23,10 +23,6 @@ class ComingSoonController extends Controller
             'API key generation and management', 'Send message and template APIs', 'Incoming message and delivery webhooks',
             'API documentation', 'Request logs',
         ]],
-        'team' => ['Team Management', 'Add agents and decide who can see and do what.', 'team', 'Phase 3', [
-            'Invite admins and agents', 'Role-based access', 'Automatic and round-robin chat assignment',
-            'Agent performance and response-time reports',
-        ]],
         'analytics' => ['Analytics', 'Deep reports on messages, campaigns, chats and agents.', 'chart', 'Phase 10', [
             'Date-wise message reports', 'Campaign performance', 'Messaging consumption by category',
             'Agent performance', 'Downloadable reports',
@@ -37,9 +33,6 @@ class ComingSoonController extends Controller
         ]],
         'support' => ['Help & Support', 'Guides, FAQs and support tickets.', 'help', 'Phase 10', [
             'Raise and track support tickets', 'Step-by-step setup guides', 'FAQs', 'Contact support',
-        ]],
-        'profile' => ['My Profile', 'Your name, password and login security.', 'user', 'Phase 3', [
-            'Update name and email', 'Change password', 'Two-factor authentication',
         ]],
     ];
 

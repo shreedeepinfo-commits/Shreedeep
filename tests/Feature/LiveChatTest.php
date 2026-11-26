@@ -31,7 +31,7 @@ class LiveChatTest extends TestCase
         $this->user = User::factory()->create(['name' => 'Dilip Kumar']);
         $ws = $this->user->createWorkspace('Shop');
         $this->agent = User::factory()->create(['name' => 'Ravi Agent']);
-        $ws->users()->attach($this->agent->id, ['role' => 'member']);
+        $ws->users()->attach($this->agent->id, ['role' => 'agent']);
         $this->account = WhatsappAccount::create([
             'workspace_id' => $ws->id, 'waba_id' => '999', 'phone_number_id' => '555', 'access_token' => 'tok', 'display_phone_number' => '+91 90000 00000', 'status' => 'connected',
         ]);

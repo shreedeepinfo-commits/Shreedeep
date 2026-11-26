@@ -22,8 +22,12 @@ class SetCurrentWorkspace
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
         }
 
-        $this->current->set($workspace);
+        $role = $user && $workspace
+            ? $user->workspaces()->whereKey($workspace->id)->first()?->pivot->role
+            : null;
+        $this->current->set($workspace, $role);
         View::share('currentWorkspace', $workspace);
+        View::share('isManager', $this->current->isManager());
 
         return $next($request);
     }

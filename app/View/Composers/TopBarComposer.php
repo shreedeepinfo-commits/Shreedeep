@@ -41,7 +41,9 @@ class TopBarComposer
             'utility' => (int) ($byCategory['UTILITY'] ?? 0),
             'service' => (int) ($byCategory['SERVICE'] ?? 0),
             'account' => WhatsappAccount::where('status', 'connected')->first(),
-            'unread' => (int) Contact::sum('unread_count'),
+            'unread' => (int) Contact::query()
+                ->when(! app(\App\Support\CurrentWorkspace::class)->isManager(), fn ($q) => $q->where(fn ($w) => $w->whereNull('assigned_user_id')->orWhere('assigned_user_id', auth()->id())))
+                ->sum('unread_count'),
             'workspaces' => auth()->user()->workspaces()->orderBy('name')->get(),
         ];
     }

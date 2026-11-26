@@ -11,6 +11,7 @@ use App\Models\QuickReply;
 use App\Models\MessageTemplate;
 use App\Models\User;
 use App\Models\WhatsappAccount;
+use App\Models\Workspace;
 use App\Services\Flows\FlowStarters;
 use Illuminate\Database\Seeder;
 
@@ -53,6 +54,8 @@ class DemoSeeder extends Seeder
             'workspace_id' => $ws, 'category' => 'MARKETING', 'status' => 'REJECTED', 'rejected_reason' => 'INVALID_FORMAT',
             'components' => [['type' => 'BODY', 'text' => '{{1}} FLASH SALE!!! Click now {{2}}']],
         ]);
+
+        $this->extras($ws);
 
         if (Contact::withoutGlobalScopes()->where('workspace_id', $ws)->exists()) {
             return;
@@ -103,6 +106,15 @@ class DemoSeeder extends Seeder
             $m->save();
             $c->update(['last_message_at' => $m->created_at, 'last_inbound_at' => $m->created_at, 'chat_status' => 'open', 'unread_count' => $c->unread_count + 1]);
         }
+        $contacts[2]->update(['assigned_user_id' => User::where('email', 'agent@example.com')->value('id')]);
+    }
+
+    /** Parts that can be added to an existing demo database too (safe to re-run). */
+    private function extras(int $ws): void
+    {
+        $agent = User::firstOrCreate(['email' => 'agent@example.com'], ['name' => 'Ravi Agent', 'password' => 'password']);
+        Workspace::find($ws)->users()->syncWithoutDetaching([$agent->id => ['role' => 'agent']]);
+        $agent->forceFill(['current_workspace_id' => $agent->current_workspace_id ?? $ws])->save();
 
         Flow::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'name' => 'Real estate enquiry'], [
             'triggers' => ['hi', 'hello', 'property'], 'status' => 'active',

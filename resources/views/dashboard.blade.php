@@ -1,6 +1,7 @@
 @extends('layouts.app', ['title' => 'Dashboard'])
 
 @php
+    $m = $isManager ?? false;
     $hour = now()->hour;
     $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
     $connected = $account && $account->status === 'connected';
@@ -20,7 +21,7 @@
             <h1 class="text-2xl lg:text-3xl font-bold mt-4">Ready to reach your customers?</h1>
             <p class="text-brand-100 mt-2 max-w-xl">You have <b class="text-white">{{ number_format($contacts) }} contacts</b> ready to go. Launch your next campaign in 60 seconds.</p>
             <div class="flex flex-wrap gap-3 mt-5">
-                <a href="{{ route('campaigns.create') }}" class="inline-flex items-center gap-2 rounded-xl bg-white text-brand-700 px-5 py-2.5 font-semibold shadow hover:bg-brand-50"><x-icon name="send" class="w-4 h-4" /> Send Campaign</a>
+                <a href="{{ ($m ? route('campaigns.create') : route('inbox.index')) }}" class="inline-flex items-center gap-2 rounded-xl bg-white text-brand-700 px-5 py-2.5 font-semibold shadow hover:bg-brand-50"><x-icon name="send" class="w-4 h-4" /> Send Campaign</a>
                 <a href="{{ route('contacts.create') }}" class="inline-flex items-center gap-2 rounded-xl border border-white/30 px-5 py-2.5 font-semibold hover:bg-white/10"><x-icon name="user-plus" class="w-4 h-4" /> Add Contact</a>
             </div>
         </div>
@@ -38,7 +39,7 @@
             ['Messaging Limit', $account?->messaging_limit ?? '—', 'chat', 'text-white'],
             ['Profile Name', $account?->verified_name ?? '—', 'user', 'text-white'],
         ] as [$label, $value, $icon, $color])
-            <a href="{{ route('whatsapp.index') }}" class="flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 px-4 py-3 hover:bg-white/15">
+            <a href="{{ ($m ? route('whatsapp.index') : route('inbox.index')) }}" class="flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 px-4 py-3 hover:bg-white/15">
                 <span class="w-9 h-9 rounded-xl bg-white/10 grid place-items-center shrink-0"><x-icon :name="$icon" class="w-5 h-5" /></span>
                 <span class="min-w-0">
                     <span class="block text-[10px] font-semibold uppercase tracking-wider text-brand-200">{{ $label }}</span>
@@ -52,7 +53,7 @@
 {{-- Overview --}}
 <div class="flex items-center justify-between mt-8 mb-4">
     <h2 class="flex items-center gap-2 text-lg font-semibold"><x-icon name="home" class="w-5 h-5 text-brand-600" /> Overview</h2>
-    <a href="{{ route('whatsapp.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full {{ $connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100' }}">
+    <a href="{{ ($m ? route('whatsapp.index') : route('inbox.index')) }}" class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full {{ $connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100' }}">
         <span class="w-2 h-2 rounded-full {{ $connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500' }}"></span>
         {{ $connected ? 'Meta Connected' : 'Meta not connected' }}
     </a>
@@ -60,8 +61,8 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
     @foreach ([
         ['Total Messages', \App\Support\Num::indian($overview['totalMessages']), 'Sent and received, all time', 'chat', route('inbox.index'), null],
-        ['Delivered', $funnel['deliveredPct'].'%', 'Of messages sent in the last 30 days', 'check', route('campaigns.index'), null],
-        ['Active Chatbots', number_format($overview['activeChatbots']), 'Live and answering customers', 'bot', route('flows.index'), null],
+        ['Delivered', $funnel['deliveredPct'].'%', 'Of messages sent in the last 30 days', 'check', ($m ? route('campaigns.index') : route('inbox.index')), null],
+        ['Active Chatbots', number_format($overview['activeChatbots']), 'Live and answering customers', 'bot', ($m ? route('flows.index') : route('inbox.index')), null],
         ['Subscription', 'Free trial', 'Plans and billing coming soon', 'card', route('soon', 'subscription'), 'Active'],
     ] as [$label, $value, $sub, $icon, $href, $badge])
         <a href="{{ $href }}" class="group bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:border-brand-300 hover:shadow-md transition">
@@ -139,10 +140,10 @@
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center justify-between mb-3">
             <div class="font-semibold">Recent campaigns</div>
-            <a href="{{ route('campaigns.index') }}" class="text-sm text-brand-600 hover:underline">View all</a>
+            <a href="{{ ($m ? route('campaigns.index') : route('inbox.index')) }}" class="text-sm text-brand-600 hover:underline">View all</a>
         </div>
         @forelse ($campaigns as $c)
-            <a href="{{ route('campaigns.show', $c) }}" class="flex items-center justify-between py-3 border-t first:border-t-0 text-sm hover:text-brand-700">
+            <a href="{{ ($m ? route('campaigns.show', $c) : route('inbox.index')) }}" class="flex items-center justify-between py-3 border-t first:border-t-0 text-sm hover:text-brand-700">
                 <span class="min-w-0">
                     <span class="block font-medium truncate">{{ $c->name }}</span>
                     <span class="block text-xs text-slate-500">{{ number_format($c->total) }} contacts · {{ $c->created_at->format('d M') }}</span>

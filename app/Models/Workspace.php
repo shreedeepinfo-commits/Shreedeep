@@ -12,11 +12,11 @@ class Workspace extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'owner_id', 'plan', 'trial_ends_at'];
+    protected $fillable = ['name', 'slug', 'owner_id', 'plan', 'trial_ends_at', 'auto_assign', 'last_assigned_user_id'];
 
     protected function casts(): array
     {
-        return ['trial_ends_at' => 'datetime'];
+        return ['trial_ends_at' => 'datetime', 'auto_assign' => 'boolean'];
     }
 
     protected static function booted(): void
@@ -37,5 +37,20 @@ class Workspace extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'workspace_user')->withPivot('role')->withTimestamps();
+    }
+
+    /** Next agent for round-robin chat assignment (agents first; admins and owner if there are no agents). */
+    public function nextAgent(): ?User
+    {
+        $members = $this->users()->orderBy('users.id')->get();
+        $pool = $members->filter(fn (User $u) => $u->pivot->role === 'agent')->values();
+        if ($pool->isEmpty()) {
+            $pool = $members;
+        }
+        if ($pool->isEmpty()) {
+            return null;
+        }
+
+        return $pool->first(fn (User $u) => $u->id > (int) $this->last_assigned_user_id) ?? $pool->first();
     }
 }
