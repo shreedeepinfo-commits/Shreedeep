@@ -1,8 +1,8 @@
-@extends('layouts.app', ['title' => 'WhatsApp Numbers'])
+@extends('layouts.app', ['title' => 'WhatsApp Settings'])
 
 @section('content')
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-semibold">WhatsApp Numbers</h1>
+    <h1 class="text-2xl font-semibold">WhatsApp Settings</h1>
     @if ($signupReady)
         <div class="flex items-center gap-3">
             <label class="text-sm flex items-center gap-1" title="Keep using the WhatsApp Business app on this number">

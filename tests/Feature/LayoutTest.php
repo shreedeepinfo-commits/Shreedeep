@@ -18,8 +18,12 @@ class LayoutTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard')->assertOk()
             ->assertSee('Shree Deep Infotech')
-            ->assertSee('Contacts &amp; Groups', false)
-            ->assertSee('Flow Builder')
+            ->assertSee('WhatsApp Business Suite')
+            ->assertSeeInOrder(['Dashboard', 'Live Chat', 'Campaigns', 'Templates', 'Contacts &amp; CRM', 'Chatbot Builder', 'Automations',
+                'WhatsApp Flows', 'Integrations', 'API &amp; Webhooks', 'Team Management', 'Analytics', 'Subscription',
+                'WhatsApp Settings', 'Help &amp; Support'], false)
+            ->assertSee('Meta not connected')
+            ->assertSee('Active Chatbots')
             ->assertSee('Ready to reach your customers?')
             ->assertSee('Not connected')
             ->assertSee('0 of 5 done');
@@ -30,7 +34,10 @@ class LayoutTest extends TestCase
         $user = User::factory()->create();
         $user->createWorkspace('Shop');
 
-        $this->actingAs($user)->get('/soon/bots')->assertOk()->assertSee('Bot Responder');
+        foreach (array_keys(\App\Http\Controllers\ComingSoonController::FEATURES) as $key) {
+            $this->actingAs($user)->get("/soon/{$key}")->assertOk()->assertSee('What you will get');
+        }
+        $this->get('/soon/subscription')->assertSee('Razorpay');
         $this->get('/soon/nope')->assertNotFound();
     }
 

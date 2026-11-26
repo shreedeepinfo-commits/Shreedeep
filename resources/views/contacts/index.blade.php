@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Contacts & Groups'])
+@extends('layouts.app', ['title' => 'Contacts & CRM'])
 
 @section('content')
 <x-page-header title="Contacts & Lists" subtitle="Build contact lists by pasting numbers or uploading a CSV. Lists of 20,000+ numbers are fine.">

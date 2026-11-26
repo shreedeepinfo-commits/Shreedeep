@@ -49,6 +49,35 @@
     </div>
 </section>
 
+{{-- Overview --}}
+<div class="flex items-center justify-between mt-8 mb-4">
+    <h2 class="flex items-center gap-2 text-lg font-semibold"><x-icon name="home" class="w-5 h-5 text-brand-600" /> Overview</h2>
+    <a href="{{ route('whatsapp.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full {{ $connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100' }}">
+        <span class="w-2 h-2 rounded-full {{ $connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500' }}"></span>
+        {{ $connected ? 'Meta Connected' : 'Meta not connected' }}
+    </a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    @foreach ([
+        ['Total Messages', \App\Support\Num::indian($overview['totalMessages']), 'Sent and received, all time', 'chat', route('inbox.index'), null],
+        ['Delivered', $funnel['deliveredPct'].'%', 'Of messages sent in the last 30 days', 'check', route('campaigns.index'), null],
+        ['Active Chatbots', number_format($overview['activeChatbots']), 'Live and answering customers', 'bot', route('flows.index'), null],
+        ['Subscription', 'Free trial', 'Plans and billing coming soon', 'card', route('soon', 'subscription'), 'Active'],
+    ] as [$label, $value, $sub, $icon, $href, $badge])
+        <a href="{{ $href }}" class="group bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:border-brand-300 hover:shadow-md transition">
+            <div class="flex items-start justify-between">
+                <div class="text-sm font-medium text-slate-500">{{ $label }}</div>
+                <span class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 grid place-items-center group-hover:bg-brand-600 group-hover:text-white transition"><x-icon :name="$icon" class="w-5 h-5" /></span>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+                <span class="text-3xl font-bold text-slate-900">{{ $value }}</span>
+                @if ($badge)<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{{ $badge }}</span>@endif
+            </div>
+            <div class="text-xs text-slate-400 mt-1">{{ $sub }}</div>
+        </a>
+    @endforeach
+</div>
+
 {{-- Funnel --}}
 <h2 class="flex items-center gap-2 text-lg font-semibold mt-8 mb-4"><x-icon name="chart" class="w-5 h-5 text-brand-600" /> Messaging Funnel <span class="text-sm font-normal text-slate-400">last 30 days</span></h2>
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
