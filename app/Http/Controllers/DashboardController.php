@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Contact;
+use App\Models\Flow;
 use App\Models\Message;
 use App\Models\MessageTemplate;
 use App\Models\WhatsappAccount;
@@ -40,7 +41,7 @@ class DashboardController extends Controller
             ['Get a template approved', 'Create or sync a message template', MessageTemplate::approved()->exists(), route('templates.index')],
             ['Upload your contacts', 'Import your customer list from CSV', $contacts > 0, route('contacts.index')],
             ['Send your first campaign', 'Reach your customers in bulk', Campaign::exists(), route('campaigns.create')],
-            ['Set up your first bot', 'Auto-reply to "price", "hi", "help"', false, route('soon', 'bots')],
+            ['Set up your first chatbot', 'Answer "hi" with buttons, 24/7', Flow::exists(), route('flows.index')],
         ];
 
         return view('dashboard', [
@@ -50,6 +51,10 @@ class DashboardController extends Controller
             'funnel' => [
                 'sent' => $sent, 'delivered' => $delivered, 'read' => $read, 'failed' => $failed,
                 'deliveredPct' => $pct($delivered), 'readPct' => $pct($read), 'failedPct' => $pct($failed),
+            ],
+            'overview' => [
+                'totalMessages' => Message::count(),
+                'activeChatbots' => Flow::where('status', 'active')->count(),
             ],
             'replies' => Message::where('direction', 'in')->where('created_at', '>=', $since)->count(),
             'chart' => [

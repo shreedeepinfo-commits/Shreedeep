@@ -1,7 +1,7 @@
-@extends('layouts.app', ['title' => 'Flow Builder'])
+@extends('layouts.app', ['title' => 'Chatbot Builder'])
 
 @section('content')
-<x-page-header title="Flow Builder" subtitle="Visual WhatsApp chatbots: set up once, they answer 24/7.">
+<x-page-header title="Chatbot Builder" subtitle="Visual WhatsApp chatbots: set up once, they answer 24/7.">
     <x-btn :href="route('flows.create', ['starter' => 'blank'])" icon="plus">Create flow</x-btn>
 </x-page-header>
 

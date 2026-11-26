@@ -8,26 +8,33 @@
 <body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
 @php
     $nav = [
-        'Main' => [
+        '' => [
             ['Dashboard', 'dashboard', 'home'],
+            ['Live Chat', 'inbox.index', 'chat'],
+        ],
+        'Messaging' => [
             ['Campaigns', 'campaigns.index', 'megaphone'],
             ['Templates', 'templates.index', 'document'],
+            ['Contacts & CRM', 'contacts.index', 'users'],
         ],
-        'Engage' => [
-            ['Contacts & Groups', 'contacts.index', 'users'],
-            ['Live Chat', 'inbox.index', 'chat'],
-            ['WhatsApp Numbers', 'whatsapp.index', 'whatsapp'],
+        'Automation' => [
+            ['Chatbot Builder', 'flows.index', 'bot'],
+            ['Automations', ['soon', 'automations'], 'bolt'],
+            ['WhatsApp Flows', ['soon', 'whatsapp-flows'], 'form'],
         ],
-        'Automate' => [
-            ['Flow Builder', 'flows.index', 'flow'],
-            ['Drip Campaign', ['soon', 'drip'], 'clock'],
-            ['Bot Responder', ['soon', 'bots'], 'bot'],
+        'Developers' => [
+            ['Integrations', ['soon', 'integrations'], 'plug'],
+            ['API & Webhooks', ['soon', 'api'], 'code'],
         ],
-        'Account' => [
-            ['User Management', ['soon', 'team'], 'team'],
-            ['My Profile', ['soon', 'profile'], 'user'],
+        'Business' => [
+            ['Team Management', ['soon', 'team'], 'team'],
+            ['Analytics', ['soon', 'analytics'], 'chart'],
+            ['Subscription', ['soon', 'subscription'], 'card'],
+            ['WhatsApp Settings', 'whatsapp.index', 'cog'],
+            ['Help & Support', ['soon', 'support'], 'help'],
         ],
     ];
+    $metaConnected = (bool) ($topBar['account'] ?? null);
     $user = auth()->user();
     $initials = collect(explode(' ', $user->name))->map(fn ($p) => mb_substr($p, 0, 1))->take(2)->join('');
 @endphp
@@ -41,10 +48,10 @@
                 <div class="text-brand-300 text-xs">{{ config('brand.product') }}</div>
             </div>
         </a>
-        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-5">
             @foreach ($nav as $section => $items)
                 <div>
-                    <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-brand-400">{{ $section }}</div>
+                    @if ($section !== '')<div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-brand-400">{{ $section }}</div>@endif
                     @foreach ($items as [$label, $route, $icon])
                         @php
                             $soon = is_array($route);
@@ -61,6 +68,16 @@
                 </div>
             @endforeach
         </nav>
+        <a href="{{ route('whatsapp.index') }}" class="mx-3 mb-3 flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 hover:bg-white/10">
+            <span class="relative flex w-2.5 h-2.5">
+                @if ($metaConnected)<span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping"></span>@endif
+                <span class="relative inline-flex w-2.5 h-2.5 rounded-full {{ $metaConnected ? 'bg-emerald-400' : 'bg-red-400' }}"></span>
+            </span>
+            <span class="text-xs leading-tight">
+                <span class="block font-semibold text-white">{{ $metaConnected ? 'Meta Connected' : 'Meta not connected' }}</span>
+                <span class="block text-brand-300">{{ $metaConnected ? $topBar['account']->display_phone_number : 'Connect your number' }}</span>
+            </span>
+        </a>
         <form method="POST" action="{{ route('logout') }}" class="p-3 border-t border-white/10">
             @csrf
             <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-white/5 hover:text-white"><x-icon name="logout" /> Log out</button>
@@ -107,10 +124,10 @@
                             <div class="font-semibold text-sm truncate max-w-[12rem]">{{ $currentWorkspace?->name }}</div>
                         </div>
                     @endif
-                    <div class="flex items-center gap-2 pl-2">
+                    <a href="{{ route('soon', 'profile') }}" title="My Profile" class="flex items-center gap-2 pl-2">
                         <span class="w-10 h-10 rounded-full bg-brand-600 text-white grid place-items-center font-semibold uppercase">{{ $initials }}</span>
                         <span class="hidden md:block text-sm font-medium">{{ Str::before($user->name, ' ') }}</span>
-                    </div>
+                    </a>
                 </div>
             </div>
         </header>
