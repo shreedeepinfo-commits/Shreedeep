@@ -7,6 +7,7 @@ use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
+use App\Http\Controllers\CrmController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InboxController;
@@ -18,6 +19,9 @@ use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
 use App\Http\Controllers\Webhooks\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
+
+// Numeric ids only, so paths like /contacts/export are not taken for a contact id.
+Route::pattern('contact', '[0-9]+');
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('welcome'));
 
@@ -47,7 +51,12 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
 
-    Route::resource('contacts', ContactController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+    Route::resource('contacts', ContactController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+    Route::post('/contacts/{contact}/lead', [ContactController::class, 'lead'])->name('contacts.lead');
+    Route::post('/contacts/{contact}/notes', [ContactController::class, 'note'])->name('contacts.notes.store');
+    Route::get('/crm/pipeline', [CrmController::class, 'pipeline'])->name('crm.pipeline');
+    Route::get('/crm/follow-ups', [CrmController::class, 'followUps'])->name('crm.followups');
+    Route::post('/crm/follow-ups/{contact}/done', [CrmController::class, 'done'])->name('crm.followups.done');
 
     Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
     Route::get('/inbox/poll', [InboxController::class, 'poll'])->name('inbox.poll');
@@ -72,6 +81,8 @@ Route::middleware(['auth', 'workspace'])->group(function () {
 
         Route::post('/contacts/import', [ContactController::class, 'import'])->name('contacts.import');
         Route::post('/contacts/paste', [ContactController::class, 'paste'])->name('contacts.paste');
+        Route::get('/contacts/export', [ContactController::class, 'export'])->name('contacts.export');
+        Route::post('/contacts/{contact}/block', [ContactController::class, 'block'])->name('contacts.block');
         Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
         Route::post('/groups', [ContactGroupController::class, 'store'])->name('groups.store');
         Route::delete('/groups/{group}', [ContactGroupController::class, 'destroy'])->name('groups.destroy');

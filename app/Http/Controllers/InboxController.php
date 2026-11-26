@@ -107,6 +107,9 @@ class InboxController extends Controller
             'file' => ['nullable', 'file', 'max:'.(25 * 1024)],
         ]);
 
+        if ($contact->blocked_at) {
+            return $this->fail($request, 'This number is blacklisted. Remove it from the blacklist in Contacts & CRM to message it.');
+        }
         if ($contact->windowSecondsLeft() <= 0) {
             return $this->fail($request, 'The 24-hour window is closed. Send an approved template from Campaigns to restart the chat.');
         }
