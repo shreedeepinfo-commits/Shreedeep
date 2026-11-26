@@ -16,6 +16,7 @@ class Message extends Model
     protected $fillable = [
         'workspace_id', 'whatsapp_account_id', 'contact_id', 'campaign_id', 'direction', 'wamid', 'phone', 'type',
         'body', 'payload', 'status', 'error_code', 'error_message', 'sent_at', 'delivered_at', 'read_at', 'failed_at',
+        'user_id', 'media_path', 'media_mime', 'media_name',
     ];
 
     protected function casts(): array
@@ -27,6 +28,24 @@ class Message extends Model
             'read_at' => 'datetime',
             'failed_at' => 'datetime',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public const MEDIA_TYPES = ['image', 'video', 'audio', 'document', 'sticker'];
+
+    public function hasMedia(): bool
+    {
+        return in_array($this->type, self::MEDIA_TYPES, true) && ($this->media_path || $this->mediaId());
+    }
+
+    /** Meta media id of a received image/video/audio/document. */
+    public function mediaId(): ?string
+    {
+        return $this->payload[$this->type]['id'] ?? null;
     }
 
     public function contact(): BelongsTo

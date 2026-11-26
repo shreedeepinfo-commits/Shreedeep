@@ -2,6 +2,7 @@
 
 namespace App\View\Composers;
 
+use App\Models\Contact;
 use App\Models\Message;
 use App\Models\WhatsappAccount;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,7 @@ class TopBarComposer
             'utility' => (int) ($byCategory['UTILITY'] ?? 0),
             'service' => (int) ($byCategory['SERVICE'] ?? 0),
             'account' => WhatsappAccount::where('status', 'connected')->first(),
+            'unread' => (int) Contact::sum('unread_count'),
             'workspaces' => auth()->user()->workspaces()->orderBy('name')->get(),
         ];
     }

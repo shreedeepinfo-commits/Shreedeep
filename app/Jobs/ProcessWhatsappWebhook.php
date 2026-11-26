@@ -128,7 +128,7 @@ class ProcessWhatsappWebhook implements ShouldQueue
             'text' => $in['text']['body'] ?? '',
             'button' => $in['button']['text'] ?? '',
             'interactive' => $in['interactive']['button_reply']['title'] ?? $in['interactive']['list_reply']['title'] ?? '',
-            'image', 'video', 'document' => trim('['.$type.'] '.($in[$type]['caption'] ?? $in[$type]['filename'] ?? '')),
+            'image', 'video', 'document', 'audio', 'sticker' => trim('['.$type.'] '.($in[$type]['caption'] ?? $in[$type]['filename'] ?? '')),
             'location' => '[location] '.($in['location']['latitude'] ?? '').','.($in['location']['longitude'] ?? ''),
             'reaction' => '[reaction] '.($in['reaction']['emoji'] ?? ''),
             default => '['.$type.']',
@@ -140,7 +140,13 @@ class ProcessWhatsappWebhook implements ShouldQueue
         } elseif (in_array($keyword, self::OPT_IN_WORDS, true)) {
             $contact->opted_out_at = null;
         }
+        $sentAt = isset($in['timestamp']) ? Carbon::createFromTimestamp((int) $in['timestamp']) : now();
         $contact->last_message_at = now();
+        if (! $contact->last_inbound_at || $sentAt->gt($contact->last_inbound_at)) {
+            $contact->last_inbound_at = $sentAt;
+        }
+        $contact->unread_count = ($contact->unread_count ?? 0) + 1;
+        $contact->chat_status = 'open'; // a customer message (re)opens the chat
         if (! $contact->name && $profileName) {
             $contact->name = $profileName;
         }
@@ -157,9 +163,11 @@ class ProcessWhatsappWebhook implements ShouldQueue
             'body' => $body,
             'payload' => $in,
             'status' => 'received',
+            'media_mime' => $in[$type]['mime_type'] ?? null,
+            'media_name' => $in[$type]['filename'] ?? null,
         ]);
         // Use WhatsApp's send time; it decides the 24-hour reply window.
-        $message->created_at = isset($in['timestamp']) ? Carbon::createFromTimestamp((int) $in['timestamp']) : now();
+        $message->created_at = $sentAt;
         $message->save();
 
         MessageReceived::dispatch($message);

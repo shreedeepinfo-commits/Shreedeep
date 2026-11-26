@@ -63,6 +63,7 @@
                             <x-icon :name="$icon" />
                             <span class="flex-1">{{ $label }}</span>
                             @if ($soon)<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-brand-200">Soon</span>@endif
+                            @if ($route === 'inbox.index' && ($topBar['unread'] ?? 0) > 0)<span class="text-[11px] min-w-5 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-semibold text-center">{{ $topBar['unread'] }}</span>@endif
                         </a>
                     @endforeach
                 </div>

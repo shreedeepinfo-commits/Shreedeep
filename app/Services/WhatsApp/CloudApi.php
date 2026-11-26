@@ -53,6 +53,42 @@ class CloudApi
         return $response->json() ?? [];
     }
 
+    /** Upload a file for sending; returns the Meta media id. */
+    public function uploadMedia(string $phoneNumberId, string $path, string $mime, string $filename): string
+    {
+        $response = $this->http()->timeout(120)
+            ->attach('file', fopen($path, 'r'), $filename, ['Content-Type' => $mime])
+            ->post("{$phoneNumberId}/media", ['messaging_product' => 'whatsapp', 'type' => $mime]);
+
+        return $this->handle($response)['id'] ?? throw new CloudApiException('No media id returned by Meta');
+    }
+
+    /** Send an uploaded image, video, audio or document. */
+    public function sendMedia(string $phoneNumberId, string $to, string $type, string $mediaId, ?string $caption = null, ?string $filename = null): array
+    {
+        $media = ['id' => $mediaId];
+        if ($caption !== null && $caption !== '' && $type !== 'audio') {
+            $media['caption'] = $caption;
+        }
+        if ($type === 'document' && $filename) {
+            $media['filename'] = $filename;
+        }
+
+        return $this->sendMessage($phoneNumberId, ['to' => $to, 'type' => $type, $type => $media]);
+    }
+
+    /** Download received media (two steps: get the short-lived URL, then fetch it with the token). */
+    public function downloadMedia(string $mediaId): array
+    {
+        $info = $this->get($mediaId);
+        $response = $this->http()->timeout(120)->accept('*/*')->get($info['url'] ?? throw new CloudApiException('No media URL returned by Meta'));
+        if ($response->failed()) {
+            throw new CloudApiException('Could not download media from WhatsApp', null, [], $response->status());
+        }
+
+        return ['body' => $response->body(), 'mime' => $info['mime_type'] ?? $response->header('Content-Type')];
+    }
+
     /** Exchange the Embedded Signup code for a business integration system user token. */
     public function exchangeCode(string $code): string
     {

@@ -7,6 +7,7 @@ use App\Models\Contact;
 use App\Models\ContactGroup;
 use App\Models\Flow;
 use App\Models\Message;
+use App\Models\QuickReply;
 use App\Models\MessageTemplate;
 use App\Models\User;
 use App\Models\WhatsappAccount;
@@ -100,7 +101,7 @@ class DemoSeeder extends Seeder
             ]);
             $m->created_at = now()->subMinutes(60 - $k * 10);
             $m->save();
-            $c->update(['last_message_at' => $m->created_at]);
+            $c->update(['last_message_at' => $m->created_at, 'last_inbound_at' => $m->created_at, 'chat_status' => 'open', 'unread_count' => $c->unread_count + 1]);
         }
 
         Flow::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'name' => 'Real estate enquiry'], [
@@ -110,5 +111,13 @@ class DemoSeeder extends Seeder
         Flow::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'name' => 'Shop menu'], [
             'triggers' => ['menu'], 'status' => 'draft', 'definition' => FlowStarters::definition('store'),
         ]);
+
+        foreach ([
+            'price' => "Our plans start at ₹999 per month. Shall I share the full price list?",
+            'address' => "We are at Shree Deep Infotech, Main Road. Open 10 AM to 7 PM, Monday to Saturday.",
+            'thanks' => "Thank you for contacting us! 🙏 Have a great day.",
+        ] as $shortcut => $text) {
+            QuickReply::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'shortcut' => $shortcut], ['body' => $text]);
+        }
     }
 }
