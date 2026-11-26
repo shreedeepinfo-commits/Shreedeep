@@ -20,7 +20,10 @@ class ImportContacts implements ShouldQueue
 
     private const PHONE_HEADERS = ['phone', 'mobile', 'number', 'phone number', 'mobile number', 'whatsapp', 'whatsapp number', 'contact'];
 
-    public function __construct(public int $importId) {}
+    public function __construct(public int $importId)
+    {
+        $this->onQueue('imports');
+    }
 
     public function handle(): void
     {

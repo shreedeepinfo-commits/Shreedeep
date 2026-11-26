@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
@@ -39,4 +40,10 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::get('/templates/create', [TemplateController::class, 'create'])->name('templates.create');
     Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
     Route::delete('/templates/{template}', [TemplateController::class, 'destroy'])->name('templates.destroy');
+
+    Route::resource('campaigns', CampaignController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('/campaigns/{campaign}/pause', [CampaignController::class, 'pause'])->name('campaigns.pause');
+    Route::post('/campaigns/{campaign}/resume', [CampaignController::class, 'resume'])->name('campaigns.resume');
+    Route::post('/campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
+    Route::get('/campaigns/{campaign}/export', [CampaignController::class, 'export'])->name('campaigns.export');
 });
