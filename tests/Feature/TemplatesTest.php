@@ -62,7 +62,7 @@ class TemplatesTest extends TestCase
             'body_examples' => ['Ravi', '20%'],
             'footer' => 'Reply STOP to unsubscribe',
             'buttons' => [['type' => 'URL', 'text' => 'Shop now', 'value' => 'https://example.com'], ['type' => 'QUICK_REPLY', 'text' => '']],
-        ])->assertRedirect('/templates');
+        ])->assertRedirect('/templates?t=1');
 
         Http::assertSent(function ($r) {
             $body = collect($r['components'])->firstWhere('type', 'BODY');

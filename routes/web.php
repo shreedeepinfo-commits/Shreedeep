@@ -91,6 +91,9 @@ Route::middleware(['auth', 'workspace'])->group(function () {
         Route::post('/templates/sync', [TemplateController::class, 'sync'])->name('templates.sync');
         Route::get('/templates/create', [TemplateController::class, 'create'])->name('templates.create');
         Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
+        Route::get('/templates/{template}/edit', [TemplateController::class, 'edit'])->name('templates.edit');
+        Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
+        Route::post('/templates/{template}/test', [TemplateController::class, 'test'])->name('templates.test');
         Route::delete('/templates/{template}', [TemplateController::class, 'destroy'])->name('templates.destroy');
 
         Route::resource('campaigns', CampaignController::class)->only(['index', 'create', 'store', 'show']);

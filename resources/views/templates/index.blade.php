@@ -82,6 +82,10 @@
                     @if ($selected->status === 'APPROVED')
                         <a href="{{ route('campaigns.create', ['template' => $selected->id]) }}" title="Use in campaign" class="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 grid place-items-center hover:bg-brand-100"><x-icon name="send" class="w-4 h-4" /></a>
                     @endif
+                    @if (in_array($selected->status, ['APPROVED', 'REJECTED', 'PAUSED']))
+                        <a href="{{ route('templates.edit', $selected) }}" title="Edit" class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 grid place-items-center hover:bg-slate-200"><x-icon name="pencil" class="w-4 h-4" /></a>
+                    @endif
+                    <a href="{{ route('templates.create', ['from' => $selected->id]) }}" title="Duplicate" class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 grid place-items-center hover:bg-slate-200"><x-icon name="clipboard" class="w-4 h-4" /></a>
                     <form method="POST" action="{{ route('templates.destroy', $selected) }}" onsubmit="return confirm('Delete this template in Meta too?')">@csrf @method('DELETE')
                         <button title="Delete" class="w-9 h-9 rounded-lg bg-red-50 text-red-600 grid place-items-center hover:bg-red-100"><x-icon name="trash" class="w-4 h-4" /></button></form>
                 </div>
@@ -101,7 +105,7 @@
                         <div class="text-sm text-slate-500 mt-1">No variables used</div>
                     @endif
                     @if ($selected->rejected_reason)
-                        <div class="mt-4 rounded-lg bg-red-50 text-red-700 text-sm p-3">Meta rejected this template: <b>{{ str_replace('_', ' ', $selected->rejected_reason) }}</b>. Edit the wording and submit it again as a new template.</div>
+                        <div class="mt-4 rounded-lg bg-red-50 text-red-700 text-sm p-3">Meta rejected this template: <b>{{ str_replace('_', ' ', $selected->rejected_reason) }}</b>. <a href="{{ route('templates.edit', $selected) }}" class="underline font-semibold">Edit and resubmit</a>.</div>
                     @endif
                 </div>
                 <div class="mt-5">
@@ -111,6 +115,24 @@
                                      :buttons="$selected->component('BUTTONS')['buttons'] ?? []" />
                     </x-phone-preview>
                 </div>
+                @if ($selected->status === 'APPROVED')
+                    @php $fmtHeader = $selected->headerFormat(); $vars = $selected->category === 'AUTHENTICATION' ? 1 : $selected->bodyVariableCount(); @endphp
+                    <form method="POST" action="{{ route('templates.test', $selected) }}" class="mt-5 rounded-xl border border-slate-200 p-4 space-y-2">
+                        @csrf
+                        <div class="font-semibold text-sm flex items-center gap-2"><x-icon name="send" class="w-4 h-4 text-brand-600" /> Send a test</div>
+                        <input name="phone" value="{{ old('phone') }}" placeholder="Your WhatsApp number, e.g. 9876543210" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" required>
+                        @if (in_array($fmtHeader, ['IMAGE', 'VIDEO', 'DOCUMENT']))
+                            <input name="header_value" value="{{ old('header_value') }}" placeholder="Public link to the header {{ strtolower($fmtHeader) }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" required>
+                        @elseif ($selected->headerVariableCount())
+                            <input name="header_value" value="{{ old('header_value') }}" placeholder="Header value" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        @endif
+                        @for ($i = 0; $i < $vars; $i++)
+                            <input name="values[{{ $i }}]" value="{{ old('values.'.$i) }}" placeholder="{{ $selected->category === 'AUTHENTICATION' ? 'Code, e.g. 123456' : 'Value for variable '.($i + 1) }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        @endfor
+                        <x-btn class="w-full" variant="outline">Send test message</x-btn>
+                        <p class="text-[11px] text-slate-400">Meta charges this like a normal message.</p>
+                    </form>
+                @endif
             </div>
         @else
             <div class="p-10 text-center text-sm text-slate-500">Select a template to see its details and preview.</div>
