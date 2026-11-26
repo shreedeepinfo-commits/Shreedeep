@@ -19,7 +19,7 @@
         ],
         'Automation' => [
             ['Chatbot Builder', 'flows.index', 'bot'],
-            ['Automations', ['soon', 'automations'], 'bolt'],
+            ['Automations', 'automations.index', 'bolt'],
             ['WhatsApp Flows', ['soon', 'whatsapp-flows'], 'form'],
         ],
         'Developers' => [

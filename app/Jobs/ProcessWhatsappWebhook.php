@@ -11,6 +11,7 @@ use App\Models\Message;
 use App\Models\MessageTemplate;
 use App\Models\WebhookEvent;
 use App\Models\WhatsappAccount;
+use App\Services\Automations\AutomationEngine;
 use App\Services\Flows\FlowEngine;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -125,6 +126,9 @@ class ProcessWhatsappWebhook implements ShouldQueue
             ['name' => $profileName, 'opt_in_source' => 'incoming message', 'opted_in_at' => now()],
         );
 
+        $firstMessage = $contact->wasRecentlyCreated
+            || ! Message::withoutGlobalScopes()->where('contact_id', $contact->id)->where('direction', 'in')->exists();
+
         $type = $in['type'] ?? 'unknown';
         $body = match ($type) {
             'text' => $in['text']['body'] ?? '',
@@ -178,9 +182,12 @@ class ProcessWhatsappWebhook implements ShouldQueue
 
         MessageReceived::dispatch($message);
 
-        // Chatbot flows (not for opt-out/opt-in keywords).
+        // Chatbot flows first, then automatic replies (not for opt-out/opt-in keywords).
         if (! $contact->blocked_at && ! in_array($keyword, self::OPT_OUT_WORDS, true) && ! in_array($keyword, self::OPT_IN_WORDS, true)) {
-            app(FlowEngine::class)->handle($account, $contact, $in, $type === 'text' ? $body : ($in['interactive']['button_reply']['title'] ?? $in['interactive']['list_reply']['title'] ?? $in['button']['text'] ?? ''));
+            $text = $type === 'text' ? $body : ($in['interactive']['button_reply']['title'] ?? $in['interactive']['list_reply']['title'] ?? $in['button']['text'] ?? '');
+            if (! app(FlowEngine::class)->handle($account, $contact, $in, $text)) {
+                app(AutomationEngine::class)->handleIncoming($account, $contact, $text, $firstMessage);
+            }
         }
     }
 
