@@ -27,7 +27,7 @@
             ['API & Webhooks', ['soon', 'api'], 'code'],
         ],
         'Business' => [
-            ['Team Management', ['soon', 'team'], 'team'],
+            ['Team Management', 'team.index', 'team'],
             ['Analytics', ['soon', 'analytics'], 'chart'],
             ['Subscription', ['soon', 'subscription'], 'card'],
             ['WhatsApp Settings', 'whatsapp.index', 'cog'],
@@ -35,6 +35,11 @@
         ],
     ];
     $metaConnected = (bool) ($topBar['account'] ?? null);
+    if (! ($isManager ?? false)) {
+        // Agents: chat-focused menu.
+        $agentRoutes = ['dashboard', 'inbox.index', 'contacts.index'];
+        $nav = collect($nav)->map(fn ($items) => array_values(array_filter($items, fn ($i) => in_array($i[1], $agentRoutes, true))))->filter()->all();
+    }
     $user = auth()->user();
     $initials = collect(explode(' ', $user->name))->map(fn ($p) => mb_substr($p, 0, 1))->take(2)->join('');
 @endphp
@@ -69,7 +74,7 @@
                 </div>
             @endforeach
         </nav>
-        <a href="{{ route('whatsapp.index') }}" class="mx-3 mb-3 flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 hover:bg-white/10">
+        <a href="{{ ($isManager ?? false) ? route('whatsapp.index') : route('inbox.index') }}" class="mx-3 mb-3 flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 hover:bg-white/10">
             <span class="relative flex w-2.5 h-2.5">
                 @if ($metaConnected)<span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping"></span>@endif
                 <span class="relative inline-flex w-2.5 h-2.5 rounded-full {{ $metaConnected ? 'bg-emerald-400' : 'bg-red-400' }}"></span>
@@ -102,7 +107,7 @@
                             <div class="flex items-center gap-1 font-semibold {{ $color }}"><x-icon :name="$icon" class="w-4 h-4" /> {{ number_format($count) }}</div>
                         </div>
                     @endforeach
-                    <a href="{{ route('whatsapp.index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-brand-300">
+                    <a href="{{ ($isManager ?? false) ? route('whatsapp.index') : '#' }}" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-brand-300">
                         <span class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 grid place-items-center"><x-icon name="whatsapp" class="w-4 h-4" /></span>
                         <span>
                             <span class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">WA Number</span>
@@ -125,7 +130,7 @@
                             <div class="font-semibold text-sm truncate max-w-[12rem]">{{ $currentWorkspace?->name }}</div>
                         </div>
                     @endif
-                    <a href="{{ route('soon', 'profile') }}" title="My Profile" class="flex items-center gap-2 pl-2">
+                    <a href="{{ route('profile.edit') }}" title="My Profile" class="flex items-center gap-2 pl-2">
                         <span class="w-10 h-10 rounded-full bg-brand-600 text-white grid place-items-center font-semibold uppercase">{{ $initials }}</span>
                         <span class="hidden md:block text-sm font-medium">{{ Str::before($user->name, ' ') }}</span>
                     </a>

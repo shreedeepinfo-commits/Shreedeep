@@ -44,6 +44,11 @@ class DashboardController extends Controller
             ['Set up your first chatbot', 'Answer "hi" with buttons, 24/7', Flow::exists(), route('flows.index')],
         ];
 
+        if (! app(\App\Support\CurrentWorkspace::class)->isManager()) {
+            // Agents cannot open setup pages; send them to their chats instead.
+            $checklist = array_map(fn ($row) => [$row[0], $row[1], $row[2], $row[3] === route('contacts.index') ? $row[3] : route('inbox.index')], $checklist);
+        }
+
         return view('dashboard', [
             'account' => $account,
             'contacts' => $contacts,

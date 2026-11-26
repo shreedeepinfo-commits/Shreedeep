@@ -42,6 +42,9 @@ class InboxController extends Controller
         $tab = array_key_exists($request->query('tab'), self::TABS) ? $request->query('tab') : 'all';
         $q = trim((string) $request->query('q'));
 
+        if ($contact) {
+            $this->authorizeChat($contact);
+        }
         if ($contact && $contact->unread_count) {
             $contact->forceFill(['unread_count' => 0])->save();
         }
@@ -68,6 +71,9 @@ class InboxController extends Controller
         $after = $request->integer('after');
 
         $newMessages = collect();
+        if ($contact && ! app(CurrentWorkspace::class)->isManager() && ! in_array($contact->assigned_user_id, [null, auth()->id()], true)) {
+            $contact = null; // transferred away from this agent
+        }
         if ($contact) {
             $newMessages = $this->thread($contact)->where('id', '>', $after)->values();
             if ($newMessages->where('direction', 'in')->isNotEmpty()) {
@@ -75,7 +81,7 @@ class InboxController extends Controller
             }
         }
 
-        $latestIn = Message::where('direction', 'in')->latest('id')->first();
+        $latestIn = Message::where('direction', 'in')->whereIn('contact_id', $this->visible(Contact::query())->select('id'))->latest('id')->first();
 
         return response()->json([
             'list' => view('inbox.partials.list', [
@@ -95,6 +101,7 @@ class InboxController extends Controller
 
     public function reply(Request $request, Contact $contact)
     {
+        $this->authorizeChat($contact);
         $request->validate([
             'body' => ['nullable', 'string', 'max:4096', 'required_without:file'],
             'file' => ['nullable', 'file', 'max:'.(25 * 1024)],
@@ -169,6 +176,7 @@ class InboxController extends Controller
 
     public function assign(Request $request, Contact $contact)
     {
+        $this->authorizeChat($contact);
         $data = $request->validate(['user_id' => ['nullable', Rule::in($this->members()->pluck('id')->all())]]);
         $userId = $data['user_id'] ?? null;
         if ((int) $contact->assigned_user_id === (int) $userId) {
@@ -179,11 +187,17 @@ class InboxController extends Controller
         $who = $userId ? User::find($userId)->name : 'nobody';
         $this->activity($contact, $request->user(), "Chat assigned to {$who}");
 
-        return back()->with('status', $userId ? "Chat assigned to {$who}." : 'Chat unassigned.');
+        $message = $userId ? "Chat assigned to {$who}." : 'Chat unassigned.';
+        if (! app(CurrentWorkspace::class)->isManager() && $userId && (int) $userId !== auth()->id()) {
+            return redirect()->route('inbox.index')->with('status', $message);
+        }
+
+        return back()->with('status', $message);
     }
 
     public function status(Request $request, Contact $contact)
     {
+        $this->authorizeChat($contact);
         $data = $request->validate(['status' => ['required', 'in:open,pending,resolved']]);
         $contact->update(['chat_status' => $data['status']]);
         $this->activity($contact, $request->user(), 'Marked as '.$data['status']);
@@ -193,6 +207,7 @@ class InboxController extends Controller
 
     public function tags(Request $request, Contact $contact)
     {
+        $this->authorizeChat($contact);
         $data = $request->validate(['tags' => ['nullable', 'string', 'max:500']]);
         $tags = collect(explode(',', (string) ($data['tags'] ?? '')))
             ->map(fn ($t) => Str::limit(trim($t), 30, ''))->filter()->unique(fn ($t) => mb_strtolower($t))->take(20)->values()->all();
@@ -203,6 +218,7 @@ class InboxController extends Controller
 
     public function note(Request $request, Contact $contact)
     {
+        $this->authorizeChat($contact);
         $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
         ContactNote::create(['contact_id' => $contact->id, 'user_id' => $request->user()->id, 'body' => $data['body']]);
 
@@ -211,6 +227,7 @@ class InboxController extends Controller
 
     public function destroyNote(Contact $contact, ContactNote $note)
     {
+        $this->authorizeChat($contact);
         abort_unless($note->contact_id === $contact->id && ! $note->system, 404);
         $note->delete();
 
@@ -221,6 +238,9 @@ class InboxController extends Controller
     public function media(Message $message)
     {
         abort_unless(in_array($message->type, Message::MEDIA_TYPES, true), 404);
+        if ($message->contact) {
+            $this->authorizeChat($message->contact);
+        }
 
         if (! $message->media_path) {
             $mediaId = $message->mediaId();
@@ -243,6 +263,23 @@ class InboxController extends Controller
             : Storage::disk('local')->response($message->media_path, null, $headers);
     }
 
+    /** Agents only see chats assigned to them or not assigned yet. */
+    private function authorizeChat(Contact $contact): void
+    {
+        if (! app(CurrentWorkspace::class)->isManager()) {
+            abort_unless(in_array($contact->assigned_user_id, [null, auth()->id()], true), 403, 'This chat is assigned to another agent.');
+        }
+    }
+
+    private function visible(Builder $query): Builder
+    {
+        if (! app(CurrentWorkspace::class)->isManager()) {
+            $query->where(fn ($w) => $w->whereNull('assigned_user_id')->orWhere('assigned_user_id', auth()->id()));
+        }
+
+        return $query;
+    }
+
     private function conversations(string $tab, string $q)
     {
         $userId = auth()->id();
@@ -253,7 +290,7 @@ class InboxController extends Controller
                 $digits = preg_replace('/\D/', '', $q);
                 $query->where(fn ($w) => $w->where('name', 'like', "%{$q}%")->when($digits !== '', fn ($w) => $w->orWhere('phone', 'like', "%{$digits}%")));
             })
-            ->tap(fn (Builder $query) => $this->applyTab($query, $tab, $userId))
+            ->tap(fn (Builder $query) => $this->applyTab($this->visible($query), $tab, $userId))
             ->orderByDesc('last_message_at')->limit(100)->get();
     }
 
@@ -272,11 +309,11 @@ class InboxController extends Controller
         $userId = auth()->id();
 
         return collect(array_keys(self::TABS))->mapWithKeys(function ($tab) use ($userId) {
-            $query = Contact::whereNotNull('last_message_at');
+            $query = $this->visible(Contact::whereNotNull('last_message_at'));
             $this->applyTab($query, $tab, $userId);
 
             return [$tab => $query->count()];
-        })->put('unread', (int) Contact::sum('unread_count'))->all();
+        })->put('unread', (int) $this->visible(Contact::query())->sum('unread_count'))->all();
     }
 
     private function thread(Contact $contact)

@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Events\MessageReceived;
 use App\Events\MessageStatusUpdated;
 use App\Models\Contact;
+use App\Models\ContactNote;
+use App\Models\Workspace;
 use App\Models\Message;
 use App\Models\MessageTemplate;
 use App\Models\WebhookEvent;
@@ -170,12 +172,32 @@ class ProcessWhatsappWebhook implements ShouldQueue
         $message->created_at = $sentAt;
         $message->save();
 
+        $this->autoAssign($account, $contact);
+
         MessageReceived::dispatch($message);
 
         // Chatbot flows (not for opt-out/opt-in keywords).
         if (! in_array($keyword, self::OPT_OUT_WORDS, true) && ! in_array($keyword, self::OPT_IN_WORDS, true)) {
             app(FlowEngine::class)->handle($account, $contact, $in, $type === 'text' ? $body : ($in['interactive']['button_reply']['title'] ?? $in['interactive']['list_reply']['title'] ?? $in['button']['text'] ?? ''));
         }
+    }
+
+    /** Round-robin: give an unassigned chat to the next agent when the workspace turned it on. */
+    private function autoAssign(WhatsappAccount $account, Contact $contact): void
+    {
+        if ($contact->assigned_user_id) {
+            return;
+        }
+        $workspace = Workspace::find($account->workspace_id);
+        if (! $workspace?->auto_assign || ! ($agent = $workspace->nextAgent())) {
+            return;
+        }
+
+        $contact->forceFill(['assigned_user_id' => $agent->id])->save();
+        $workspace->forceFill(['last_assigned_user_id' => $agent->id])->save();
+        ContactNote::withoutGlobalScopes()->create([
+            'workspace_id' => $workspace->id, 'contact_id' => $contact->id, 'body' => "Chat auto-assigned to {$agent->name}", 'system' => true,
+        ]);
     }
 
     private function handleTemplateStatus(array $value): void

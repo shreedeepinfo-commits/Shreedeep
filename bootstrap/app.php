@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'workspace' => \App\Http\Middleware\SetCurrentWorkspace::class,
+            'manager' => \App\Http\Middleware\EnsureManager::class,
         ]);
         // Resolve the workspace before route model binding so bound models are tenant-scoped.
         $middleware->prependToPriorityList(
