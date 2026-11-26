@@ -18,6 +18,8 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\QuickReplyController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\Webhooks\PaymentWebhookController;
 use App\Http\Controllers\Webhooks\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +32,10 @@ Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view
 Route::get('/webhooks/whatsapp', [WhatsappWebhookController::class, 'verify']);
 Route::post('/webhooks/whatsapp', [WhatsappWebhookController::class, 'receive'])->name('webhooks.whatsapp');
 
+// Payment gateway confirmations (set these URLs in the Razorpay / Cashfree dashboards).
+Route::post('/webhooks/razorpay', [PaymentWebhookController::class, 'razorpay'])->name('webhooks.razorpay');
+Route::post('/webhooks/cashfree', [PaymentWebhookController::class, 'cashfree'])->name('webhooks.cashfree');
+
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
@@ -41,7 +47,7 @@ Route::middleware('guest')->group(function () {
 Route::get('/invite/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 Route::post('/invite/{token}', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitations.accept');
 
-Route::middleware(['auth', 'workspace'])->group(function () {
+Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {
     // Everyone in the workspace (owners, admins and agents).
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -109,6 +115,13 @@ Route::middleware(['auth', 'workspace'])->group(function () {
         Route::resource('flows', FlowController::class)->except('show');
         Route::post('/flows/{flow}/toggle', [FlowController::class, 'toggle'])->name('flows.toggle');
         Route::post('/flows/{flow}/duplicate', [FlowController::class, 'duplicate'])->name('flows.duplicate');
+
+        Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
+        Route::put('/subscription/billing', [SubscriptionController::class, 'billing'])->name('subscription.billing');
+        Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->middleware('throttle:10,1')->name('subscription.checkout');
+        Route::post('/subscription/payments/{payment}/razorpay', [SubscriptionController::class, 'razorpayCallback'])->name('subscription.razorpay.callback');
+        Route::get('/subscription/payments/{payment}/cashfree', [SubscriptionController::class, 'cashfreeReturn'])->name('subscription.cashfree.return');
+        Route::get('/subscription/invoices/{invoice}', [SubscriptionController::class, 'invoice'])->name('subscription.invoice');
 
         Route::resource('automations', AutomationController::class)->except('show');
         Route::post('/automations/{automation}/toggle', [AutomationController::class, 'toggle'])->name('automations.toggle');

@@ -50,6 +50,9 @@ class FlowController extends Controller
 
     public function store(Request $request)
     {
+        if ($limit = $this->planLimitReached('flows', 1, 'name')) {
+            return $limit;
+        }
         $flow = Flow::create($this->validated($request));
 
         return redirect()->route('flows.edit', $flow)->with('status', 'Flow saved.'.($flow->status === 'active' ? ' It is live now.' : ''));
@@ -74,6 +77,9 @@ class FlowController extends Controller
 
     public function duplicate(Flow $flow)
     {
+        if ($limit = $this->planLimitReached('flows')) {
+            return $limit;
+        }
         $copy = $flow->replicate(['triggered_count', 'completed_count']);
         $copy->name = $flow->name.' (copy)';
         $copy->status = 'draft';

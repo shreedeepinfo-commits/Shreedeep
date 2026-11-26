@@ -40,6 +40,9 @@ class TeamController extends Controller
             'role' => ['required', Rule::in($this->assignableRoles())],
         ], ['email.unique' => 'This person is already invited.']);
         $data['email'] = Str::lower($data['email']);
+        if ($limit = $this->planLimitReached('members', 1, 'email')) {
+            return $limit;
+        }
 
         if ($workspace->users()->where('email', $data['email'])->exists()) {
             return back()->withErrors(['email' => 'This person is already in your team.'])->withInput();

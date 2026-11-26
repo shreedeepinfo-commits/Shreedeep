@@ -134,6 +134,12 @@ class DemoSeeder extends Seeder
             QuickReply::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'shortcut' => $shortcut], ['body' => $text]);
         }
 
+        // Keep the demo workspace usable: a fresh trial when it has no paid plan and the trial ran out.
+        $workspace = Workspace::find($ws);
+        if ($workspace->isExpired()) {
+            $workspace->forceFill(['trial_ends_at' => now()->addDays(config('billing.trial_days'))])->save();
+        }
+
         // Sample automations (only once). Scheduled ones start switched off so demo numbers get nothing.
         if (! Automation::withoutGlobalScopes()->where('workspace_id', $ws)->exists()) {
             $auto = fn (string $type, string $name, bool $active, array $config, int $sent = 0) => Automation::withoutGlobalScopes()->create(

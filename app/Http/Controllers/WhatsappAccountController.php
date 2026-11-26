@@ -28,6 +28,9 @@ class WhatsappAccountController extends Controller
             'business_id' => ['nullable', 'string', 'regex:/^\d+$/'],
             'coexistence' => ['nullable', 'boolean'],
         ]);
+        if ($limit = $this->planLimitReached('numbers')) {
+            return $limit;
+        }
 
         try {
             $account = $connect->viaEmbeddedSignup(
@@ -50,6 +53,9 @@ class WhatsappAccountController extends Controller
             'phone_number_id' => ['required', 'string', 'regex:/^\d+$/'],
             'access_token' => ['required', 'string', 'min:20'],
         ]);
+        if ($limit = $this->planLimitReached('numbers', 1, 'access_token')) {
+            return $limit;
+        }
 
         try {
             $account = $connect->manually($current->get(), $data['access_token'], $data['waba_id'], $data['phone_number_id']);

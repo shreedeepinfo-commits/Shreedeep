@@ -25,12 +25,6 @@
     @if ($automation->exists) @method('PUT') @else <input type="hidden" name="type" value="{{ $type }}"> @endif
 
     <div class="xl:col-span-2 space-y-6">
-        @if ($errors->any())
-            <div class="rounded-2xl border border-red-200 bg-red-50 text-red-700 text-sm p-4">
-                @foreach ($errors->all() as $e)<div>{{ $e }}</div>@endforeach
-            </div>
-        @endif
-
         <div class="{{ $card }}">
             <div class="flex items-center gap-3 mb-5">
                 <span class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 grid place-items-center"><x-icon :name="$typeIcon" class="w-5 h-5" /></span>
