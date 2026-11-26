@@ -172,12 +172,14 @@ class ProcessWhatsappWebhook implements ShouldQueue
         $message->created_at = $sentAt;
         $message->save();
 
-        $this->autoAssign($account, $contact);
+        if (! $contact->blocked_at) {
+            $this->autoAssign($account, $contact);
+        }
 
         MessageReceived::dispatch($message);
 
         // Chatbot flows (not for opt-out/opt-in keywords).
-        if (! in_array($keyword, self::OPT_OUT_WORDS, true) && ! in_array($keyword, self::OPT_IN_WORDS, true)) {
+        if (! $contact->blocked_at && ! in_array($keyword, self::OPT_OUT_WORDS, true) && ! in_array($keyword, self::OPT_IN_WORDS, true)) {
             app(FlowEngine::class)->handle($account, $contact, $in, $type === 'text' ? $body : ($in['interactive']['button_reply']['title'] ?? $in['interactive']['list_reply']['title'] ?? $in['button']['text'] ?? ''));
         }
     }

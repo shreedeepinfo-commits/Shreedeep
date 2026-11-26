@@ -47,6 +47,17 @@ class SendCampaignMessage implements ShouldQueue
             return; // paused or cancelled: message stays queued until resume
         }
 
+        // Opted out or blacklisted after the campaign was prepared: never send.
+        if ($message->contact && ($message->contact->opted_out_at || $message->contact->blocked_at)) {
+            $message->update([
+                'status' => 'failed', 'failed_at' => now(), 'error_code' => 'skipped',
+                'error_message' => $message->contact->blocked_at ? 'Skipped: number is blacklisted' : 'Skipped: contact opted out',
+            ]);
+            $launcher->completeIfDone($campaign);
+
+            return;
+        }
+
         $template = $campaign->template;
         $built = MessageBuilder::build($template, $campaign, $message->contact);
         $account = $message->whatsappAccount;

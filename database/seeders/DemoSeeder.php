@@ -55,9 +55,9 @@ class DemoSeeder extends Seeder
             'components' => [['type' => 'BODY', 'text' => '{{1}} FLASH SALE!!! Click now {{2}}']],
         ]);
 
-        $this->extras($ws);
-
         if (Contact::withoutGlobalScopes()->where('workspace_id', $ws)->exists()) {
+            $this->extras($ws);
+
             return;
         }
 
@@ -106,6 +106,7 @@ class DemoSeeder extends Seeder
             $m->save();
             $c->update(['last_message_at' => $m->created_at, 'last_inbound_at' => $m->created_at, 'chat_status' => 'open', 'unread_count' => $c->unread_count + 1]);
         }
+        $this->extras($ws);
         $contacts[2]->update(['assigned_user_id' => User::where('email', 'agent@example.com')->value('id')]);
     }
 
@@ -130,6 +131,29 @@ class DemoSeeder extends Seeder
             'thanks' => "Thank you for contacting us! 🙏 Have a great day.",
         ] as $shortcut => $text) {
             QuickReply::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'shortcut' => $shortcut], ['body' => $text]);
+        }
+
+        // Sample CRM data (only once).
+        if (! Contact::withoutGlobalScopes()->where('workspace_id', $ws)->whereNotNull('deal_value')->exists()) {
+            $leads = [
+                ['interested', 250000, 1, 'Call about site visit', ['hot lead', 'pune']],
+                ['negotiation', 480000, 0, 'Send final quote', ['hot lead']],
+                ['contacted', 120000, 2, null, ['mumbai']],
+                ['won', 350000, null, null, ['vip']],
+                ['new', 90000, -1, 'Missed call, try again', []],
+                ['lost', 60000, null, null, []],
+                ['interested', 175000, 3, 'Share brochure', ['pune']],
+                ['won', 210000, null, null, ['vip']],
+            ];
+            $contacts = Contact::withoutGlobalScopes()->where('workspace_id', $ws)->orderBy('id')->limit(count($leads))->get();
+            foreach ($contacts as $i => $contact) {
+                [$stage, $value, $days, $note, $tags] = $leads[$i];
+                $contact->forceFill([
+                    'lead_status' => $stage, 'deal_value' => $value, 'tags' => $tags ?: $contact->tags,
+                    'follow_up_at' => $days === null ? null : now()->addDays($days)->setTime(11, 0),
+                    'follow_up_note' => $days === null ? null : $note,
+                ])->save();
+            }
         }
     }
 }

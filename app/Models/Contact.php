@@ -14,9 +14,22 @@ class Contact extends Model
 {
     use BelongsToWorkspace, HasFactory;
 
+    /** Sales pipeline stages: key => [label, colour classes]. */
+    public const LEAD_STATUSES = [
+        'new' => ['New', 'bg-sky-50 text-sky-700'],
+        'contacted' => ['Contacted', 'bg-brand-50 text-brand-700'],
+        'interested' => ['Interested', 'bg-violet-50 text-violet-700'],
+        'negotiation' => ['Negotiation', 'bg-amber-50 text-amber-700'],
+        'won' => ['Won', 'bg-emerald-50 text-emerald-700'],
+        'lost' => ['Lost', 'bg-slate-100 text-slate-500'],
+    ];
+
+    protected $attributes = ['lead_status' => 'new'];
+
     protected $fillable = [
         'workspace_id', 'phone', 'name', 'email', 'fields', 'opted_in_at', 'opt_in_source', 'opted_out_at', 'last_message_at',
         'chat_status', 'assigned_user_id', 'unread_count', 'last_inbound_at', 'tags',
+        'lead_status', 'deal_value', 'follow_up_at', 'follow_up_note', 'blocked_at',
     ];
 
     protected function casts(): array
@@ -28,6 +41,9 @@ class Contact extends Model
             'last_message_at' => 'datetime',
             'last_inbound_at' => 'datetime',
             'tags' => 'array',
+            'deal_value' => 'decimal:2',
+            'follow_up_at' => 'datetime',
+            'blocked_at' => 'datetime',
         ];
     }
 
@@ -56,10 +72,25 @@ class Contact extends Model
         return max(0, (int) now()->diffInSeconds($this->last_inbound_at->copy()->addDay(), false));
     }
 
-    /** Contacts that may receive marketing campaigns. */
+    /** Contacts that may receive marketing campaigns: not opted out and not blacklisted. */
     public function scopeSubscribed(Builder $query): Builder
     {
-        return $query->whereNull('opted_out_at');
+        return $query->whereNull('opted_out_at')->whereNull('blocked_at');
+    }
+
+    public function leadLabel(): string
+    {
+        return self::LEAD_STATUSES[$this->lead_status][0] ?? ucfirst((string) $this->lead_status);
+    }
+
+    public function leadColor(): string
+    {
+        return self::LEAD_STATUSES[$this->lead_status][1] ?? 'bg-slate-100 text-slate-600';
+    }
+
+    public function displayName(): string
+    {
+        return $this->name ?: '+'.$this->phone;
     }
 
     /** Value for a template variable like {{name}} or any CSV column. */
