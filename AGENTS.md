@@ -1,47 +1,11 @@
-<laravel-boost-guidelines>
-# Laravel Application
+# Shreedeep WhatsApp Panel
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+Multi-tenant SaaS panel for WhatsApp Cloud API bulk messaging (Laravel 13, PHP 8.3).
 
-## Prerequisites
-
-Verify that PHP and Composer are available:
-
-```sh
-php -v
-composer -V
-```
-
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
-
-macOS:
-
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
-
-Windows PowerShell:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
-```
-
-Linux:
-
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
-
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
-
-## Agent Setup
-
-Install Laravel Boost from the application root before making application changes:
-
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+- Customers sign up, get a workspace, and connect their own WhatsApp number via Meta Embedded Signup.
+- Every tenant-owned model uses the `BelongsToWorkspace` trait and carries `workspace_id`. Never query tenant data without the workspace scope.
+- Meta credentials (app id, secret, config id, webhook verify token) live only in `.env`. Never commit secrets.
+- Per-customer access tokens are stored with Laravel's `encrypted` cast.
+- Slow work (campaign sends, webhook processing) runs on queues (Redis + Horizon in production).
+- UI: Blade views in `resources/views`, Tailwind via CDN (no npm build needed for the MVP).
+- Run tests: `php artisan test`
