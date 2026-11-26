@@ -1,5 +1,12 @@
 @extends('layouts.app', ['title' => 'New campaign'])
 
+@php
+    $fromAud = $from?->audience ?? [];
+    $fromType = $from ? (! empty($fromAud['all']) ? 'all' : (! empty($fromAud['tags']) ? 'tags' : 'groups')) : null;
+    $preGroups = old('groups', $from ? ($fromAud['groups'] ?? []) : (request('group') ? [(int) request('group')] : []));
+    $preTags = old('tags', $fromAud['tags'] ?? []);
+@endphp
+
 @section('content')
 <x-page-header title="New campaign" subtitle="Pick a template, choose who gets it, personalise and send.">
     <x-btn :href="route('campaigns.index')" variant="outline">Cancel</x-btn>
@@ -20,26 +27,26 @@
             <div class="flex items-center gap-3 mb-4"><span class="w-7 h-7 rounded-full bg-brand-600 text-white grid place-items-center text-sm font-semibold">1</span><span class="font-semibold">Campaign &amp; template</span></div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label class="block"><span class="text-sm font-medium text-slate-700">Campaign name</span>
-                    <input name="name" value="{{ old('name', 'Campaign '.now()->format('d M Y, h:i A')) }}" required class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
+                    <input name="name" value="{{ old('name', $from ? $from->name.' (copy)' : 'Campaign '.now()->format('d M Y, h:i A')) }}" required class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
                 <label class="block"><span class="text-sm font-medium text-slate-700">Approved template</span>
                     <select name="message_template_id" id="template" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5" required>
                         @foreach ($templates as $t)
-                            <option value="{{ $t->id }}" @selected(old('message_template_id', request('template')) == $t->id)>{{ $t->name }} · {{ $t->language }} · {{ strtolower($t->category) }}</option>
+                            <option value="{{ $t->id }}" @selected(old('message_template_id', $from?->message_template_id ?? request('template')) == $t->id)>{{ $t->name }} · {{ $t->language }} · {{ strtolower($t->category) }}</option>
                         @endforeach
                     </select></label>
             </div>
             <div id="header-media" class="hidden mt-4">
                 <label class="block"><span class="text-sm font-medium text-slate-700">Header media link (public https URL)</span>
-                    <input name="header_media_url" value="{{ old('header_media_url') }}" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5" placeholder="https://…/offer.jpg"></label>
+                    <input name="header_media_url" value="{{ old('header_media_url', $from?->header_media_url) }}" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5" placeholder="https://…/offer.jpg"></label>
             </div>
         </section>
 
         {{-- 2. Audience --}}
         <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div class="flex items-center gap-3 mb-4"><span class="w-7 h-7 rounded-full bg-brand-600 text-white grid place-items-center text-sm font-semibold">2</span><span class="font-semibold">Audience</span></div>
-            @php $aud = old('audience', $groups->isEmpty() ? 'paste' : 'groups'); @endphp
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                @foreach (['groups' => ['Contact lists', 'list'], 'paste' => ['Paste numbers', 'clipboard'], 'csv' => ['Upload CSV', 'upload'], 'all' => ['All contacts', 'users']] as $key => [$label, $icon])
+            @php $aud = old('audience', $fromType ?? ($groups->isEmpty() ? 'paste' : 'groups')); @endphp
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+                @foreach (['groups' => ['Contact lists', 'list'], 'tags' => ['By tags', 'bolt'], 'paste' => ['Paste numbers', 'clipboard'], 'csv' => ['Upload CSV', 'upload'], 'all' => ['All contacts', 'users']] as $key => [$label, $icon])
                     <label class="aud-opt cursor-pointer flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium {{ $aud === $key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200' }}">
                         <input type="radio" name="audience" value="{{ $key }}" class="sr-only" @checked($aud === $key)> <x-icon :name="$icon" class="w-4 h-4" /> {{ $label }}
                     </label>
@@ -49,12 +56,24 @@
                 <div class="flex flex-wrap gap-2">
                     @forelse ($groups as $g)
                         <label class="cursor-pointer inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700">
-                            <input type="checkbox" name="groups[]" value="{{ $g->id }}" class="accent-brand-600" @checked(in_array($g->id, old('groups', [])))> {{ $g->name }} <span class="opacity-60">({{ number_format($g->contacts_count) }})</span>
+                            <input type="checkbox" name="groups[]" value="{{ $g->id }}" data-count="{{ $g->contacts_count }}" class="accent-brand-600 aud-count" @checked(in_array($g->id, $preGroups))> {{ $g->name }} <span class="opacity-60">({{ number_format($g->contacts_count) }})</span>
                         </label>
                     @empty
                         <span class="text-sm text-slate-500">No lists yet. Use Paste numbers or Upload CSV.</span>
                     @endforelse
                 </div>
+            </div>
+            <div data-aud="tags" class="aud-panel {{ $aud === 'tags' ? '' : 'hidden' }}">
+                <div class="flex flex-wrap gap-2">
+                    @forelse ($tagCounts as $tag => $count)
+                        <label class="cursor-pointer inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700">
+                            <input type="checkbox" name="tags[]" value="{{ $tag }}" data-count="{{ $count }}" class="accent-brand-600 aud-count" @checked(in_array($tag, $preTags))> {{ $tag }} <span class="opacity-60">({{ number_format($count) }})</span>
+                        </label>
+                    @empty
+                        <span class="text-sm text-slate-500">No tags yet. Add tags to contacts in Contacts &amp; CRM or Live Chat.</span>
+                    @endforelse
+                </div>
+                <div class="text-xs text-slate-500 mt-2">Contacts with any of the selected tags get the message.</div>
             </div>
             <div data-aud="paste" class="aud-panel space-y-2 {{ $aud === 'paste' ? '' : 'hidden' }}">
                 <textarea name="numbers" id="numbers" rows="6" placeholder="One number per line (number, name). 20,000+ numbers are fine." class="w-full border border-slate-200 rounded-xl px-3 py-2 font-mono text-xs">{{ old('numbers') }}</textarea>
@@ -96,7 +115,10 @@
             </div>
         </section>
 
-        <x-btn class="w-full md:w-auto px-8 py-3" icon="send">Launch campaign</x-btn>
+        <div class="flex flex-col md:flex-row md:items-center gap-4">
+            <x-btn class="w-full md:w-auto px-8 py-3" icon="send">Launch campaign</x-btn>
+            <span class="text-xs text-slate-500">Opted-out and blacklisted numbers are skipped automatically.</span>
+        </div>
     </div>
 
     <div class="xl:sticky xl:top-28 self-start">
@@ -104,6 +126,14 @@
         <x-phone-preview :name="$accounts->first()?->verified_name ?? 'Your Business'" :number="$accounts->first()?->display_phone_number">
             <div id="preview"></div>
         </x-phone-preview>
+        <div class="mt-5 rounded-2xl bg-gradient-to-br from-brand-950 via-brand-800 to-brand-600 text-white p-5 shadow-lg">
+            <div class="text-xs font-semibold uppercase tracking-wider text-brand-200">Estimate</div>
+            <div class="flex items-end justify-between mt-2">
+                <div><div class="text-2xl font-bold" id="est-count">0</div><div class="text-xs text-brand-200">recipients</div></div>
+                <div class="text-right"><div class="text-2xl font-bold" id="est-cost">₹0</div><div class="text-xs text-brand-200">approx. Meta charge</div></div>
+            </div>
+            <div class="text-[11px] text-brand-200 mt-3" id="est-note">Meta bills your WhatsApp account directly, about <span id="est-rate"></span> per message for this template's category. Final count excludes opted-out numbers.</div>
+        </div>
     </div>
 </form>
 
@@ -114,7 +144,8 @@
 @push('scripts')
 <script>
     const templates = @json($templateMeta);
-    const oldBody = @json(old('variables.body', []));
+    const oldBody = @json(old('variables.body', $from?->variables['body'] ?? []));
+    const subscribedTotal = @json($subscribedTotal);
     const select = document.getElementById('template');
     const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
     const sample = { name: 'Ravi', phone: '919876543210', email: 'ravi@example.com' };
@@ -170,6 +201,28 @@
         document.getElementById('upload-extra').classList.toggle('hidden', !['paste', 'csv'].includes(r.value));
     }));
     const numbers = document.getElementById('numbers'), counter = document.getElementById('numbers-count');
-    if (numbers) { const c = () => counter.textContent = (numbers.value.match(/\+?\d[\d\s\-().]{6,}\d/g) || []).length.toLocaleString(); numbers.addEventListener('input', c); c(); }
+    const pasted = () => numbers ? (numbers.value.match(/\+?\d[\d\s\-().]{6,}\d/g) || []).length : 0;
+    if (numbers) { const c = () => { counter.textContent = pasted().toLocaleString('en-IN'); estimate(); }; numbers.addEventListener('input', c); c(); }
+
+    function estimate() {
+        const t = templates[select?.value];
+        const aud = document.querySelector('input[name=audience]:checked')?.value;
+        let count = 0, approx = false;
+        if (aud === 'all') count = subscribedTotal;
+        else if (aud === 'paste') count = pasted();
+        else if (aud === 'groups' || aud === 'tags') {
+            const boxes = [...document.querySelectorAll('.aud-panel[data-aud="' + aud + '"] .aud-count:checked')];
+            count = boxes.reduce((n, b) => n + Number(b.dataset.count || 0), 0);
+            approx = boxes.length > 1; // a contact can be in more than one list or tag
+        }
+        const rate = t ? t.rate : 0;
+        document.getElementById('est-count').textContent = (approx ? 'up to ' : '') + (aud === 'csv' ? '—' : count.toLocaleString('en-IN'));
+        document.getElementById('est-cost').textContent = aud === 'csv' ? '—' : '₹' + (count * rate).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        document.getElementById('est-rate').textContent = '₹' + rate.toFixed(2);
+    }
+    document.querySelectorAll('.aud-count').forEach(b => b.addEventListener('change', estimate));
+    document.querySelectorAll('.aud-opt input').forEach(r => r.addEventListener('change', estimate));
+    select?.addEventListener('change', estimate);
+    estimate();
 </script>
 @endpush

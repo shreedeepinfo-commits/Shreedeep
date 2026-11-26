@@ -13,13 +13,17 @@ use App\Models\WhatsappAccount;
 use App\Services\Campaigns\CampaignLauncher;
 use App\Support\CurrentWorkspace;
 use App\Support\PastedNumbers;
+use App\Models\Contact;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CampaignController extends Controller
 {
+    public const SEGMENTS = ['read' => 'Read', 'unread' => 'Not read', 'failed' => 'Failed', 'replied' => 'Replied'];
+
     public const TABS = ['all' => 'All', 'running' => 'Sending', 'completed' => 'Sent', 'scheduled' => 'Scheduled', 'paused' => 'Paused', 'cancelled' => 'Cancelled'];
 
     public function index(Request $request)
@@ -49,9 +53,11 @@ class CampaignController extends Controller
         return view('campaigns.index', compact('campaigns', 'counts', 'tab', 'tabCounts', 'kpis'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $templates = MessageTemplate::approved()->orderBy('name')->get();
+        $from = $request->query('from') ? Campaign::find($request->query('from')) : null;
+        $tags = Contact::whereNotNull('tags')->pluck('tags')->flatten()->filter()->unique(fn ($t) => mb_strtolower($t))->sort()->values();
 
         return view('campaigns.create', [
             'accounts' => WhatsappAccount::where('status', 'connected')->get(),
@@ -64,9 +70,62 @@ class CampaignController extends Controller
                 'headerVars' => $t->headerVariableCount(),
                 'footer' => $t->component('FOOTER')['text'] ?? null,
                 'buttons' => array_column($t->component('BUTTONS')['buttons'] ?? [], 'text'),
+                'rate' => Campaign::rate($t->category),
             ]]),
-            'groups' => ContactGroup::withCount(['contacts' => fn ($q) => $q->whereNull('opted_out_at')])->orderBy('name')->get(),
+            'groups' => ContactGroup::withCount(['contacts' => fn ($q) => $q->subscribed()])->orderBy('name')->get(),
+            'subscribedTotal' => Contact::subscribed()->count(),
+            'tagCounts' => $tags->mapWithKeys(fn ($t) => [$t => CampaignLauncher::withAnyTag(Contact::subscribed(), [$t])->count()]),
+            'from' => $from,
         ]);
+    }
+
+    /** Start a new campaign with the same template, variables and audience. */
+    public function duplicate(Campaign $campaign)
+    {
+        return redirect()->route('campaigns.create', ['from' => $campaign->id]);
+    }
+
+    /** Send failed messages once more when the failure was temporary. */
+    public function retry(Campaign $campaign, CampaignLauncher $launcher)
+    {
+        abort_if($campaign->status === 'cancelled', 422);
+        $ids = $campaign->retryableMessages()->pluck('id');
+        if ($ids->isEmpty()) {
+            return back()->withErrors(['retry' => 'No failed messages can be retried. Errors like "not on WhatsApp" or "user stopped marketing messages" are final.']);
+        }
+
+        Message::whereIn('id', $ids)->update([
+            'status' => 'queued', 'retry_count' => DB::raw('retry_count + 1'),
+            'error_code' => null, 'error_message' => null, 'failed_at' => null,
+        ]);
+        $campaign->update(['status' => 'running', 'completed_at' => null]);
+        StartCampaign::dispatch($campaign->id);
+
+        return back()->with('status', "Retrying {$ids->count()} failed messages.");
+    }
+
+    /** Save a group of recipients (read, not read, failed, replied) as a new list for a follow-up campaign. */
+    public function retarget(Request $request, Campaign $campaign)
+    {
+        $data = $request->validate(['segment' => ['required', Rule::in(array_keys(self::SEGMENTS))]]);
+        $messages = $campaign->messages()->whereNotNull('contact_id');
+        $contactIds = match ($data['segment']) {
+            'read' => $messages->where('status', 'read')->pluck('contact_id'),
+            'unread' => $messages->whereIn('status', ['sent', 'delivered'])->pluck('contact_id'),
+            'failed' => $messages->where('status', 'failed')->pluck('contact_id'),
+            'replied' => Message::where('direction', 'in')->where('created_at', '>=', $campaign->started_at ?? $campaign->created_at)
+                ->whereIn('contact_id', $campaign->messages()->whereNotNull('contact_id')->select('contact_id'))->distinct()->pluck('contact_id'),
+        };
+
+        if ($contactIds->isEmpty()) {
+            return back()->withErrors(['segment' => 'Nobody is in this group yet.']);
+        }
+
+        $group = ContactGroup::firstOrCreate(['name' => Str::limit($campaign->name, 200, '').' · '.self::SEGMENTS[$data['segment']]]);
+        $contactIds->unique()->chunk(1000)->each(fn ($chunk) => $group->contacts()->syncWithoutDetaching($chunk->all()));
+
+        return redirect()->route('campaigns.create', ['group' => $group->id])
+            ->with('status', "Saved {$contactIds->unique()->count()} contacts to the list \"{$group->name}\". Pick a template to send them a follow-up.");
     }
 
     public function store(Request $request, CampaignLauncher $launcher, CurrentWorkspace $current)
@@ -75,7 +134,9 @@ class CampaignController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'message_template_id' => ['required', Rule::exists('message_templates', 'id')->where('workspace_id', $ws)->where('status', 'APPROVED')],
-            'audience' => ['required', 'in:all,groups,paste,csv'],
+            'audience' => ['required', 'in:all,groups,tags,paste,csv'],
+            'tags' => ['required_if:audience,tags', 'array'],
+            'tags.*' => ['string', 'max:30'],
             'numbers' => ['required_if:audience,paste', 'nullable', 'string', 'max:2000000'],
             'file' => ['required_if:audience,csv', 'nullable', 'file', 'mimes:csv,txt', 'max:20480'],
             'default_country_code' => ['nullable', 'regex:/^\+?\d{1,4}$/'],
@@ -118,7 +179,11 @@ class CampaignController extends Controller
                 'name' => $data['name'],
                 'whatsapp_account_id' => $template->whatsapp_account_id,
                 'message_template_id' => $template->id,
-                'audience' => ['all' => $data['audience'] === 'all', 'groups' => array_map('intval', $data['groups'] ?? [])],
+                'audience' => [
+                    'all' => $data['audience'] === 'all',
+                    'groups' => $data['audience'] === 'groups' ? array_map('intval', $data['groups'] ?? []) : [],
+                    'tags' => $data['audience'] === 'tags' ? array_values($data['tags'] ?? []) : [],
+                ],
                 'variables' => $data['variables'] ?? [],
                 'header_media_url' => $data['header_media_url'] ?? null,
                 'scheduled_at' => $data['send'] === 'later' ? $data['scheduled_at'] : null,
@@ -152,7 +217,16 @@ class CampaignController extends Controller
         $errors = $campaign->messages()->where('status', 'failed')
             ->selectRaw('error_message, count(*) as c')->groupBy('error_message')->orderByDesc('c')->limit(5)->get();
 
-        return view('campaigns.show', ['campaign' => $campaign->load('template', 'whatsappAccount'), 'stats' => $campaign->stats(), 'messages' => $messages, 'failures' => $errors]);
+        $replied = Message::where('direction', 'in')->where('created_at', '>=', $campaign->started_at ?? $campaign->created_at)
+            ->whereIn('contact_id', $campaign->messages()->whereNotNull('contact_id')->select('contact_id'))->distinct()->count('contact_id');
+
+        return view('campaigns.show', [
+            'campaign' => $campaign->load('template', 'whatsappAccount'),
+            'stats' => $campaign->stats() + ['replied' => $replied],
+            'messages' => $messages,
+            'failures' => $errors,
+            'retryable' => $campaign->retryableMessages()->count(),
+        ]);
     }
 
     public function pause(Campaign $campaign)

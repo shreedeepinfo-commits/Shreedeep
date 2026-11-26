@@ -98,6 +98,9 @@ Route::middleware(['auth', 'workspace'])->group(function () {
         Route::post('/campaigns/{campaign}/resume', [CampaignController::class, 'resume'])->name('campaigns.resume');
         Route::post('/campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
         Route::get('/campaigns/{campaign}/export', [CampaignController::class, 'export'])->name('campaigns.export');
+        Route::post('/campaigns/{campaign}/duplicate', [CampaignController::class, 'duplicate'])->name('campaigns.duplicate');
+        Route::post('/campaigns/{campaign}/retry', [CampaignController::class, 'retry'])->name('campaigns.retry');
+        Route::post('/campaigns/{campaign}/retarget', [CampaignController::class, 'retarget'])->name('campaigns.retarget');
 
         Route::resource('flows', FlowController::class)->except('show');
         Route::post('/flows/{flow}/toggle', [FlowController::class, 'toggle'])->name('flows.toggle');
