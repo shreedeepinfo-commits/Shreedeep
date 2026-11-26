@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,4 +33,10 @@ Route::middleware(['auth', 'workspace'])->group(function () {
     Route::resource('contacts', ContactController::class)->except('show');
     Route::post('/groups', [ContactGroupController::class, 'store'])->name('groups.store');
     Route::delete('/groups/{group}', [ContactGroupController::class, 'destroy'])->name('groups.destroy');
+
+    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+    Route::post('/templates/sync', [TemplateController::class, 'sync'])->name('templates.sync');
+    Route::get('/templates/create', [TemplateController::class, 'create'])->name('templates.create');
+    Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
+    Route::delete('/templates/{template}', [TemplateController::class, 'destroy'])->name('templates.destroy');
 });
