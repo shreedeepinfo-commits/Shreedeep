@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ComingSoonController;
@@ -46,6 +47,21 @@ Route::middleware('guest')->group(function () {
 // Team invitation links (signed in or not).
 Route::get('/invite/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 Route::post('/invite/{token}', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitations.accept');
+
+// Super admin (platform owner). No workspace scope here: these pages see every customer.
+Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/customers', [AdminController::class, 'customers'])->name('customers');
+    Route::get('/customers/{workspace}', [AdminController::class, 'customer'])->name('customers.show');
+    Route::post('/customers/{workspace}/plan', [AdminController::class, 'plan'])->name('customers.plan');
+    Route::post('/customers/{workspace}/suspend', [AdminController::class, 'suspend'])->name('customers.suspend');
+    Route::post('/customers/{workspace}/note', [AdminController::class, 'note'])->name('customers.note');
+    Route::post('/customers/{workspace}/impersonate', [AdminController::class, 'impersonate'])->name('customers.impersonate');
+    Route::get('/payments', [AdminController::class, 'payments'])->name('payments');
+    Route::get('/invoices/{invoice}', [AdminController::class, 'invoice'])->name('invoices.show');
+    Route::get('/plans', [AdminController::class, 'plans'])->name('plans');
+});
+Route::post('/admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->middleware('auth')->name('admin.impersonate.stop');
 
 Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {
     // Everyone in the workspace (owners, admins and agents).

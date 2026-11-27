@@ -112,6 +112,33 @@ class DemoSeeder extends Seeder
     }
 
     /** Parts that can be added to an existing demo database too (safe to re-run). */
+    /** Super admin login and a few sample customers for the admin panel (only once). */
+    private function platform(): void
+    {
+        User::firstOrCreate(['email' => 'admin@example.com'], ['name' => 'Dilip (Super Admin)', 'password' => 'password'])
+            ->forceFill(['is_super_admin' => true])->save();
+
+        foreach ([
+            ['Sharma Electronics', 'sharma@example.com', 'Rohit Sharma', 'growth', 'Rajasthan', 40],
+            ['Patel Dental Clinic', 'patel@example.com', 'Nisha Patel', null, 'Gujarat', 5],
+            ['Mehta Realty', 'mehta@example.com', 'Amit Mehta', 'expired', 'Maharashtra', 60],
+            ['Kaur Fashion House', 'kaur@example.com', 'Simran Kaur', 'starter', 'Punjab', 20],
+        ] as [$business, $email, $name, $plan, $state, $ageDays]) {
+            if (User::where('email', $email)->exists()) {
+                continue;
+            }
+            $owner = User::create(['name' => $name, 'email' => $email, 'password' => 'password']);
+            $workspace = $owner->createWorkspace($business);
+            $workspace->forceFill([
+                'created_at' => now()->subDays($ageDays), 'trial_ends_at' => now()->subDays($ageDays)->addDays(14),
+                'billing_name' => $business, 'billing_state' => $state,
+            ])->save();
+            if (in_array($plan, ['growth', 'starter'], true)) {
+                \App\Services\Billing\Billing::markPaid(\App\Services\Billing\Billing::newOrder($workspace, $owner, $plan, 'monthly', 'test'), 'demo_'.$workspace->id);
+            }
+        }
+    }
+
     private function extras(int $ws): void
     {
         $agent = User::firstOrCreate(['email' => 'agent@example.com'], ['name' => 'Ravi Agent', 'password' => 'password']);
@@ -133,6 +160,8 @@ class DemoSeeder extends Seeder
         ] as $shortcut => $text) {
             QuickReply::withoutGlobalScopes()->firstOrCreate(['workspace_id' => $ws, 'shortcut' => $shortcut], ['body' => $text]);
         }
+
+        $this->platform();
 
         // Keep the demo workspace usable: a fresh trial when it has no paid plan and the trial ran out.
         $workspace = Workspace::find($ws);

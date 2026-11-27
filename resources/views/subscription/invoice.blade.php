@@ -34,7 +34,7 @@
 </head>
 <body>
 <div class="actions">
-    <a href="{{ route('subscription.index') }}" class="btn o">← Back</a>
+    <a href="{{ $back ?? route('subscription.index') }}" class="btn o">← Back</a>
     <button class="btn" onclick="window.print()">Download / Print PDF</button>
 </div>
 <div class="sheet">

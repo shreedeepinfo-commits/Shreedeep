@@ -17,6 +17,11 @@ class Payment extends Model
         return ['amount' => 'decimal:2', 'tax' => 'decimal:2', 'total' => 'decimal:2', 'paid_at' => 'datetime', 'meta' => 'array'];
     }
 
+    public function workspace(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
+    }
+
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);

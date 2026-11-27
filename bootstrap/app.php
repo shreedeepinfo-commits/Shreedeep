@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'workspace' => \App\Http\Middleware\SetCurrentWorkspace::class,
             'manager' => \App\Http\Middleware\EnsureManager::class,
             'subscribed' => \App\Http\Middleware\EnsureActiveSubscription::class,
+            'super-admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
         ]);
         // Resolve the workspace before route model binding so bound models are tenant-scoped.
         $middleware->prependToPriorityList(
