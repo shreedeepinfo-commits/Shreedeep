@@ -14,10 +14,6 @@ class ComingSoonController extends Controller
             'Shopify and WooCommerce', 'Google Sheets', 'Zoho CRM', 'WordPress', 'Zapier and Make',
             'Website WhatsApp chat widget', 'WhatsApp QR code and link generator', 'Click-to-WhatsApp Ads tracking',
         ]],
-        'api' => ['API & Webhooks', 'Send messages from your own software.', 'code', 'Phase 10', [
-            'API key generation and management', 'Send message and template APIs', 'Incoming message and delivery webhooks',
-            'API documentation', 'Request logs',
-        ]],
         'analytics' => ['Analytics', 'Deep reports on messages, campaigns, chats and agents.', 'chart', 'Phase 10', [
             'Date-wise message reports', 'Campaign performance', 'Messaging consumption by category',
             'Agent performance', 'Downloadable reports',
