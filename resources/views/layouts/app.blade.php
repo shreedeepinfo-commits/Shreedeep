@@ -31,13 +31,13 @@
             ['Analytics', 'analytics.index', 'chart'],
             ['Subscription', 'subscription.index', 'card'],
             ['WhatsApp Settings', 'whatsapp.index', 'cog'],
-            ['Help & Support', ['soon', 'support'], 'help'],
+            ['Help & Support', 'support.index', 'help'],
         ],
     ];
     $metaConnected = (bool) ($topBar['account'] ?? null);
     if (! ($isManager ?? false)) {
         // Agents: chat-focused menu.
-        $agentRoutes = ['dashboard', 'inbox.index', 'contacts.index'];
+        $agentRoutes = ['dashboard', 'inbox.index', 'contacts.index', 'support.index'];
         $nav = collect($nav)->map(fn ($items) => array_values(array_filter($items, fn ($i) => in_array($i[1], $agentRoutes, true))))->filter()->all();
     }
     $user = auth()->user();
