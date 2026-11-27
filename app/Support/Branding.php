@@ -36,7 +36,15 @@ class Branding
             return Reseller::where('slug', $slug)->whereNull('suspended_at')->exists();
         }
 
-        return Reseller::where('custom_domain', $host)->whereNull('suspended_at')->exists();
+        return Reseller::whereIn('custom_domain', self::domainVariants($host))->whereNull('suspended_at')->exists();
+    }
+
+    /** A reseller's domain also works with or without "www.". */
+    public static function domainVariants(string $host): array
+    {
+        $host = strtolower($host);
+
+        return str_starts_with($host, 'www.') ? [$host, substr($host, 4)] : [$host, 'www.'.$host];
     }
 
     public function reseller(): ?Reseller
@@ -49,7 +57,7 @@ class Branding
     {
         $host = strtolower($request->getHost());
         $base = strtolower((string) config('reseller.base_domain'));
-        $reseller = Reseller::where('custom_domain', $host)->first();
+        $reseller = Reseller::whereIn('custom_domain', self::domainVariants($host))->first();
         if (! $reseller && $base !== '' && str_ends_with($host, '.'.$base)) {
             $reseller = Reseller::where('slug', substr($host, 0, -strlen('.'.$base)))->first();
         }

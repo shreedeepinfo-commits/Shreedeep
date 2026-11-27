@@ -42,6 +42,13 @@ class WhiteLabelDomainTest extends TestCase
         $this->get('/internal/tls-check?domain=evil.example.com')->assertNotFound();
         $this->get('/internal/tls-check')->assertNotFound();
 
+        $r->update(['custom_domain' => 'agencyweb.in']); // root domain with an A record, www works too
+        $this->get('/internal/tls-check?domain=agencyweb.in')->assertOk();
+        $this->get('/internal/tls-check?domain=www.agencyweb.in')->assertOk();
+        $this->get('https://www.agencyweb.in/login')->assertOk()->assertSee('Agency');
+        $this->get('/internal/tls-check?domain=wa.agency.in')->assertNotFound();
+        $r->update(['custom_domain' => 'wa.agency.in']);
+
         $r->forceFill(['suspended_at' => now()])->save();
         $this->get('/internal/tls-check?domain=wa.agency.in')->assertNotFound();
     }
