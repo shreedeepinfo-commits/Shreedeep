@@ -106,12 +106,23 @@
                 </div>
 
                 <div class="ml-auto hidden xl:flex items-center gap-2">
-                    @foreach ([['Marketing', $topBar['marketing'] ?? 0, 'send', 'text-brand-600'], ['Utility', $topBar['utility'] ?? 0, 'chat', 'text-sky-600'], ['Service', $topBar['service'] ?? 0, 'chat', 'text-emerald-600']] as [$label, $count, $icon, $color])
-                        <div class="px-3 py-1.5 rounded-xl border border-slate-200" title="{{ $label }} messages sent this month">
-                            <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{{ $label }}</div>
-                            <div class="flex items-center gap-1 font-semibold {{ $color }}"><x-icon :name="$icon" class="w-4 h-4" /> {{ number_format($count) }}</div>
+                    @php
+                        $rates = config('whatsapp.rates');
+                        $estCost = ($topBar['marketing'] ?? 0) * ($rates['MARKETING'] ?? 0) + ($topBar['utility'] ?? 0) * ($rates['UTILITY'] ?? 0);
+                    @endphp
+                    <div class="flex items-center gap-1 px-2 py-1 rounded-xl border border-slate-200" title="Messages sent this month. Usage only: WhatsApp charges are paid by you directly to Meta (card in your Meta account). There are no credits in this panel.">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-1 leading-tight">Sent this<br>month</span>
+                        @foreach ([['Marketing', $topBar['marketing'] ?? 0, 'text-brand-600'], ['Utility', $topBar['utility'] ?? 0, 'text-sky-600'], ['Service', $topBar['service'] ?? 0, 'text-emerald-600']] as [$label, $count, $color])
+                            <div class="px-2 border-l border-slate-100">
+                                <div class="text-[10px] text-slate-400">{{ $label }}</div>
+                                <div class="font-semibold {{ $color }} text-sm">{{ number_format($count) }}</div>
+                            </div>
+                        @endforeach
+                        <div class="px-2 border-l border-slate-100">
+                            <div class="text-[10px] text-slate-400">Meta bill (est.)</div>
+                            <div class="font-semibold text-slate-700 text-sm">≈ ₹{{ \App\Support\Num::indian($estCost) }}</div>
                         </div>
-                    @endforeach
+                    </div>
                     <a href="{{ ($isManager ?? false) ? route('whatsapp.index') : '#' }}" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-brand-300">
                         <span class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 grid place-items-center"><x-icon name="whatsapp" class="w-4 h-4" /></span>
                         <span>
