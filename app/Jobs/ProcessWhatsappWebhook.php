@@ -86,7 +86,7 @@ class ProcessWhatsappWebhook implements ShouldQueue
             return;
         }
 
-        $at = isset($status['timestamp']) ? Carbon::createFromTimestamp((int) $status['timestamp']) : now();
+        $at = isset($status['timestamp']) ? Carbon::createFromTimestamp((int) $status['timestamp'], config('app.timezone')) : now();
         $updates = [];
         if ($new === 'failed') {
             if ($message->status === 'read') {
@@ -149,7 +149,7 @@ class ProcessWhatsappWebhook implements ShouldQueue
         } elseif (in_array($keyword, self::OPT_IN_WORDS, true)) {
             $contact->opted_out_at = null;
         }
-        $sentAt = isset($in['timestamp']) ? Carbon::createFromTimestamp((int) $in['timestamp']) : now();
+        $sentAt = isset($in['timestamp']) ? Carbon::createFromTimestamp((int) $in['timestamp'], config('app.timezone')) : now();
         $contact->last_message_at = now();
         if (! $contact->last_inbound_at || $sentAt->gt($contact->last_inbound_at)) {
             $contact->last_inbound_at = $sentAt;

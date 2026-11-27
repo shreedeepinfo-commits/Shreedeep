@@ -103,7 +103,7 @@
         </div>
         <div id="examples" class="grid grid-cols-1 md:grid-cols-3 gap-2"></div>
         <label class="block"><span class="text-sm font-medium text-slate-600">Footer (optional)</span>
-            <input name="footer" value="{{ $f('footer', $editing ? null : 'Reply STOP to unsubscribe') }}" maxlength="60" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
+            <input name="footer" value="{{ $f('footer') }}" maxlength="60" placeholder="Leave empty for Utility templates" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
 
         <div>
             <div class="flex items-center justify-between">
