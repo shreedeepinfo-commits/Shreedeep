@@ -2,19 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MessageTemplate;
 use App\Models\WhatsappAccount;
 use App\Services\WhatsApp\CloudApiException;
 use App\Services\WhatsApp\ConnectNumber;
+use App\Support\Branding;
 use App\Support\CurrentWorkspace;
+use App\Support\MetaErrors;
 use Illuminate\Http\Request;
 
 class WhatsappAccountController extends Controller
 {
-    public function index()
+    public function index(Request $request, CurrentWorkspace $current)
     {
+        // On a reseller's own domain, Meta signup runs on the main domain in a popup.
+        $main = Branding::mainHost();
+        $bridgeUrl = $main !== '' && $request->getHost() !== $main
+            ? 'https://'.$main.'/connect/whatsapp?t='.urlencode(WhatsappSignupBridgeController::ticket($current->get(), $request->user()->id, $request->getSchemeAndHttpHost()))
+            : null;
+
         return view('whatsapp.index', [
             'accounts' => WhatsappAccount::latest()->get(),
+            'templates' => MessageTemplate::approved()->orderBy('name')->get()->groupBy('whatsapp_account_id'),
             'signupReady' => config('whatsapp.app_id') && config('whatsapp.config_id'),
+            'bridgeUrl' => $bridgeUrl,
+            'bridgeOrigin' => 'https://'.$main,
         ]);
     }
 
@@ -82,10 +94,11 @@ class WhatsappAccountController extends Controller
                 ? $account->api()->sendText($account->phone_number_id, $to, $data['body'])
                 : $account->api()->sendTemplate($account->phone_number_id, $to, $data['template'], $data['language'] ?: 'en_US');
         } catch (CloudApiException $e) {
-            return back()->withErrors(['to' => 'Send failed: '.$e->getMessage()])->withInput();
+            return back()->withErrors(['to' => 'Send failed: '.MetaErrors::explain($e->metaCode, $e->getMessage())])->withInput();
         }
 
-        return back()->with('status', 'Message sent. WhatsApp message id: '.($result['messages'][0]['id'] ?? 'n/a'));
+        return back()->with('status', 'Meta accepted the message (id '.($result['messages'][0]['id'] ?? 'n/a').'). '
+            .'If it does not arrive in a minute, open Live Chat or Analytics to see the delivery error.');
     }
 
     public function refresh(WhatsappAccount $account)

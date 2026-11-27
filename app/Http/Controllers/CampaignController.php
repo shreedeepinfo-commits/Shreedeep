@@ -215,7 +215,7 @@ class CampaignController extends Controller
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->orderBy('id')->paginate(50)->withQueryString();
         $errors = $campaign->messages()->where('status', 'failed')
-            ->selectRaw('error_message, count(*) as c')->groupBy('error_message')->orderByDesc('c')->limit(5)->get();
+            ->selectRaw('error_code, error_message, count(*) as c')->groupBy('error_code', 'error_message')->orderByDesc('c')->limit(5)->get();
 
         $replied = Message::where('direction', 'in')->where('created_at', '>=', $campaign->started_at ?? $campaign->created_at)
             ->whereIn('contact_id', $campaign->messages()->whereNotNull('contact_id')->select('contact_id'))->distinct()->count('contact_id');

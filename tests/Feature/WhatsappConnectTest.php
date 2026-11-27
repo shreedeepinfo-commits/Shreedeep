@@ -115,4 +115,28 @@ class WhatsappConnectTest extends TestCase
         $this->get('/whatsapp')->assertDontSee('555');
         Http::assertNothingSent();
     }
+
+    public function test_send_failure_shows_plain_fix_and_page_lists_approved_templates(): void
+    {
+        Http::fake(['*/555/messages' => Http::response(['error' => [
+            'message' => '(#131058) Hello World templates can only be sent from the Public Test Numbers', 'code' => 131058,
+        ]], 400)]);
+        $user = $this->owner();
+        $account = WhatsappAccount::create([
+            'workspace_id' => $user->current_workspace_id, 'waba_id' => '999', 'phone_number_id' => '555', 'access_token' => 'tok',
+        ]);
+
+        $this->actingAs($user)->get('/whatsapp')->assertSee('No approved template yet')->assertDontSee('value="hello_world"', false);
+
+        \App\Models\MessageTemplate::create([
+            'workspace_id' => $user->current_workspace_id, 'whatsapp_account_id' => $account->id,
+            'name' => 'order_update', 'language' => 'hi', 'category' => 'UTILITY', 'status' => 'APPROVED', 'components' => [],
+        ]);
+        $this->get('/whatsapp')->assertSee('order_update (hi)')->assertDontSee('No approved template yet');
+
+        $this->post("/whatsapp/{$account->id}/test", ['to' => '919876543210', 'type' => 'template', 'template' => 'hello_world', 'language' => 'en_US'])
+            ->assertSessionHasErrors('to');
+        $this->assertStringContainsString('Create your own template', session('errors')->first('to'));
+        $this->assertStringContainsString('Create your own template', \App\Support\MetaErrors::hint('131058'));
+    }
 }

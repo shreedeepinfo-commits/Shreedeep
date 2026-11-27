@@ -15,8 +15,8 @@ class SetCurrentWorkspace
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if ($user?->is_super_admin) {
-            return redirect()->route('admin.dashboard'); // the platform owner has the admin panel, not a customer workspace
+        if ($user?->is_super_admin && ! $user->workspaces()->exists()) {
+            return redirect()->route('admin.dashboard'); // the platform owner uses the admin panel until they open their own WhatsApp panel
         }
         if ($user?->reseller_id && ! $user->workspaces()->exists()) {
             return redirect()->route('reseller.dashboard'); // a reseller login without its own WhatsApp workspace

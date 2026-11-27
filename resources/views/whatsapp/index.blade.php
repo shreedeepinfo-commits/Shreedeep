@@ -48,11 +48,26 @@
                     <option value="template">Template</option>
                     <option value="text">Text (only inside 24h window)</option>
                 </select></label>
-            <label class="block"><span class="text-xs">Template name / language</span>
-                <div class="flex gap-1 mt-1"><input name="template" value="hello_world" class="w-full border rounded px-2 py-1"><input name="language" value="en_US" class="w-20 border rounded px-2 py-1"></div></label>
+            @php($approved = $templates[$account->id] ?? collect())
+            <label class="block"><span class="text-xs">Approved template</span>
+                @if ($approved->isNotEmpty())
+                    <select name="template" class="mt-1 w-full border rounded px-2 py-1"
+                            onchange="this.form.language.value = this.selectedOptions[0].dataset.lang">
+                        @foreach ($approved as $t)
+                            <option value="{{ $t->name }}" data-lang="{{ $t->language }}" @selected(old('template') === $t->name)>{{ $t->name }} ({{ $t->language }})</option>
+                        @endforeach
+                    </select>
+                    <input type="hidden" name="language" value="{{ old('language', $approved->first()->language) }}">
+                @else
+                    <div class="flex gap-1 mt-1"><input name="template" value="{{ old('template') }}" placeholder="template_name" class="w-full border rounded px-2 py-1"><input name="language" value="{{ old('language', 'en') }}" class="w-16 border rounded px-2 py-1"></div>
+                @endif
+            </label>
             <label class="block"><span class="text-xs">Text body</span>
                 <input name="body" placeholder="Hello from the panel" class="mt-1 w-full border rounded px-2 py-1"></label>
             <button class="rounded bg-brand-600 text-white px-4 py-2 font-semibold">Send</button>
+            @if ($approved->isEmpty())
+                <p class="md:col-span-5 text-xs text-amber-700">No approved template yet. <a href="{{ route('templates.index') }}" class="underline font-semibold">Create a template</a> and wait for Meta approval (hello_world works only on Meta test numbers). Text messages work only if this person messaged you in the last 24 hours.</p>
+            @endif
         </form>
     </div>
 @empty
@@ -76,75 +91,25 @@
 
 @if ($signupReady)
 @push('scripts')
+@if ($bridgeUrl)
 <script>
-    window.fbAsyncInit = function () {
-        FB.init({ appId: @json(config('whatsapp.app_id')), autoLogAppEvents: true, xfbml: true, version: @json(config('whatsapp.graph_version')) });
-    };
-
-    // Embedded Signup posts the new WABA and phone number ids to this window.
-    let signupSession = null;
-    window.addEventListener('message', (event) => {
-        if (!event.origin.endsWith('facebook.com')) return;
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type !== 'WA_EMBEDDED_SIGNUP') return;
-            if (String(data.event).startsWith('FINISH')) {
-                signupSession = data.data;
-            } else if (data.event === 'CANCEL') {
-                showStatus('Signup was cancelled' + (data.data?.current_step ? ' at step ' + data.data.current_step : '') + '.', true);
-            } else if (data.event === 'ERROR') {
-                showStatus('Meta reported an error: ' + (data.data?.error_message || 'unknown'), true);
-            }
-        } catch (e) { /* not JSON, ignore */ }
-    });
-
-    function showStatus(text, isError) {
-        const el = document.getElementById('connect-status');
-        el.textContent = text;
-        el.className = 'mb-4 rounded px-4 py-3 text-sm ' + (isError ? 'bg-red-100 text-red-900' : 'bg-emerald-100 text-emerald-900');
-    }
-
-    async function finishSignup(code) {
-        // The session info message can arrive just after the login callback.
-        for (let i = 0; i < 20 && !signupSession; i++) await new Promise(r => setTimeout(r, 250));
-        if (!signupSession?.phone_number_id || !signupSession?.waba_id) {
-            showStatus('Meta did not return the WhatsApp number details. Please try again.', true);
-            return;
-        }
-        showStatus('Connecting your number…', false);
-        const res = await fetch(@json(route('whatsapp.connect')), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-            body: JSON.stringify({
-                code,
-                waba_id: signupSession.waba_id,
-                phone_number_id: signupSession.phone_number_id,
-                business_id: signupSession.business_id || null,
-                coexistence: document.getElementById('coexistence').checked,
-            }),
-        });
-        const json = await res.json();
-        if (res.ok) window.location = json.redirect; else showStatus(json.message || 'Could not connect the number.', true);
-    }
-
+    // White-label domain: Meta signup runs on the main panel domain in a popup, then tells this page it is done.
     document.getElementById('connect-whatsapp').addEventListener('click', () => {
-        signupSession = null;
-        const coexistence = document.getElementById('coexistence').checked;
-        FB.login((response) => {
-            if (response.authResponse?.code) finishSignup(response.authResponse.code);
-            else showStatus('Signup window closed before finishing.', true);
-        }, {
-            config_id: @json(config('whatsapp.config_id')),
-            response_type: 'code',
-            override_default_response_type: true,
-            extras: {
-                setup: {},
-                featureType: coexistence ? 'whatsapp_business_app_onboarding' : '',
-                sessionInfoVersion: '3',
-            },
-        });
+        const coexistence = document.getElementById('coexistence').checked ? 1 : 0;
+        const w = window.open(@json($bridgeUrl) + '&coexistence=' + coexistence, 'wa-connect', 'width=720,height=820');
+        if (!w) alert('Please allow pop-ups for this site to connect WhatsApp.');
+    });
+    window.addEventListener('message', (event) => {
+        if (event.origin !== @json($bridgeOrigin) || event.data?.type !== 'SD_WA_CONNECTED') return;
+        window.location.reload();
     });
 </script>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+@else
+@include('whatsapp.partials.signup-js', [
+    'connectUrl' => route('whatsapp.connect'),
+    'extra' => [],
+    'onDone' => 'json => { window.location = json.redirect; }',
+])
+@endif
 @endpush
 @endif

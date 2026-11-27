@@ -23,6 +23,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WidgetController;
+use App\Http\Controllers\WhatsappSignupBridgeController;
 use App\Http\Controllers\QuickReplyController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TemplateController;
@@ -46,6 +47,14 @@ Route::post('/webhooks/whatsapp', [WhatsappWebhookController::class, 'receive'])
 Route::post('/webhooks/razorpay', [PaymentWebhookController::class, 'razorpay'])->name('webhooks.razorpay');
 Route::post('/webhooks/cashfree', [PaymentWebhookController::class, 'cashfree'])->name('webhooks.cashfree');
 
+// White label: Meta Embedded Signup for reseller domains runs here on the main domain (popup with an encrypted ticket).
+Route::get('/connect/whatsapp', [WhatsappSignupBridgeController::class, 'show'])->name('whatsapp.bridge');
+Route::post('/connect/whatsapp', [WhatsappSignupBridgeController::class, 'connect'])->middleware('throttle:20,1')->name('whatsapp.bridge.connect');
+
+// Caddy on-demand TLS asks here before issuing a certificate: only our own and registered reseller domains.
+Route::get('/internal/tls-check', fn (\Illuminate\Http\Request $r) => \App\Support\Branding::servesHost((string) $r->query('domain')) ? response('ok') : response('unknown domain', 404))
+    ->middleware('throttle:120,1')->name('tls.check');
+
 // Integrations: store order webhooks and the public website chat widget.
 Route::post('/webhooks/store/{token}', StoreWebhookController::class)->middleware('throttle:120,1')->name('webhooks.store');
 Route::get('/widget/{token}.js', [WidgetController::class, 'script'])->name('widget.script');
@@ -66,6 +75,7 @@ Route::post('/invite/{token}', [InvitationController::class, 'accept'])->middlew
 Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/customers', [AdminController::class, 'customers'])->name('customers');
+    Route::post('/customers', [AdminController::class, 'storeCustomer'])->name('customers.store');
     Route::get('/customers/{workspace}', [AdminController::class, 'customer'])->name('customers.show');
     Route::post('/customers/{workspace}/plan', [AdminController::class, 'plan'])->name('customers.plan');
     Route::post('/customers/{workspace}/suspend', [AdminController::class, 'suspend'])->name('customers.suspend');
@@ -104,6 +114,7 @@ Route::middleware(['auth', 'reseller'])->prefix('reseller')->name('reseller.')->
     Route::get('/settings', [ResellerPanelController::class, 'settings'])->name('settings');
     Route::put('/settings', [ResellerPanelController::class, 'updateSettings'])->name('settings.update');
 });
+Route::post('/my-panel', \App\Http\Controllers\MyPanelController::class)->middleware('auth')->name('my-panel');
 Route::post('/admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->middleware('auth')->name('admin.impersonate.stop');
 
 Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {

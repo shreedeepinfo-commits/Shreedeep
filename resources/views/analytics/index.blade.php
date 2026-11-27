@@ -115,7 +115,7 @@
             @forelse ($failures as $f)
                 <div class="flex items-start gap-3 py-2 border-b border-slate-50 text-sm">
                     <span class="text-xs font-semibold px-2 py-0.5 rounded bg-red-50 text-red-700 shrink-0">{{ $f->error_code ?: '—' }}</span>
-                    <span class="flex-1 text-slate-600">{{ \Illuminate\Support\Str::limit($f->error_message ?: 'Unknown error', 110) }}</span>
+                    <span class="flex-1 text-slate-600">{{ \Illuminate\Support\Str::limit($f->error_message ?: 'Unknown error', 110) }}@if ($hint = \App\Support\MetaErrors::hint($f->error_code))<span class="block text-xs text-amber-700 mt-0.5">{{ $hint }}</span>@endif</span>
                     <span class="font-semibold">{{ Num::indian($f->c) }}</span>
                 </div>
             @empty

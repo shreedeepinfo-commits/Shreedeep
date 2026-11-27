@@ -84,6 +84,15 @@ class TemplatesTest extends TestCase
 
     public function test_create_page_renders(): void
     {
-        $this->actingAs($this->user)->get('/templates/create')->assertOk()->assertSee('Submit to Meta for approval');
+        $this->actingAs($this->user)->get('/templates/create')->assertOk()->assertSee('Submit to Meta for approval')
+            // A default "Reply STOP" footer makes Meta classify templates as Marketing.
+            ->assertDontSee('value="Reply STOP to unsubscribe"', false);
+    }
+
+    public function test_panel_runs_on_india_time(): void
+    {
+        $this->assertSame('Asia/Kolkata', config('app.timezone'));
+        $this->assertSame('+05:30', config('database.connections.mysql.timezone'));
+        $this->assertSame('+05:30', now()->format('P'));
     }
 }

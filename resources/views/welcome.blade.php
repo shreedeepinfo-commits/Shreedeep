@@ -1,4 +1,4 @@
-@extends('layouts.guest', ['title' => config('app.name')])
+@extends('layouts.guest', ['title' => config('brand.name')])
 
 @section('content')
 <h1 class="text-2xl font-semibold mb-2">WhatsApp bulk messaging, on the official Cloud API</h1>

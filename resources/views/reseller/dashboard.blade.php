@@ -15,7 +15,7 @@
             <div class="text-2xl font-bold">{{ $me->balanceLabel() }}</div>
         </div>
         <div class="flex gap-2">
-            <x-btn :href="route('reseller.customers').'#new'" icon="user-plus" class="!bg-white !text-brand-700">Add customer</x-btn>
+            <x-btn :href="route('reseller.customers').'#new'" icon="user-plus" class="!bg-white !text-brand-700">Add user</x-btn>
         </div>
     </div>
 </section>

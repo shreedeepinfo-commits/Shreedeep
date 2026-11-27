@@ -25,7 +25,12 @@
             <div><b>Your panel address:</b> <a href="{{ $me->url() }}/login" target="_blank" class="text-brand-700">{{ $me->slug }}.{{ config('reseller.base_domain') }}</a></div>
             <label class="{{ $lb }}">Own domain (optional)</label>
             <input name="custom_domain" value="{{ old('custom_domain', $me->custom_domain) }}" placeholder="wa.yourcompany.com" class="{{ $in }}">
-            <p class="text-xs text-slate-500">Add a DNS <b>CNAME</b> record from your domain to <code>{{ config('reseller.base_domain') }}</code>, then save it here. SSL is issued automatically on the server.</p>
+            <div class="text-xs text-slate-600 space-y-1">
+                <p>Point your domain to us in <b>your</b> domain's DNS, then save it here. HTTPS is issued automatically within a minute of the first visit.</p>
+                <p>• Subdomain (e.g. <code>wa.yourcompany.com</code>): <b>CNAME</b> → <code>{{ \App\Support\Branding::mainHost() }}</code></p>
+                @if (config('reseller.server_ip'))<p>• Root domain (e.g. <code>yourcompany.com</code>): <b>A</b> record → <code>{{ config('reseller.server_ip') }}</code> (add <code>www</code> as CNAME to the root too)</p>@endif
+                <p>Your customers see only your domain, name and logo.</p>
+            </div>
         </div>
     </div>
 

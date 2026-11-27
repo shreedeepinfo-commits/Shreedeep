@@ -31,11 +31,11 @@ class AnalyticsController extends Controller
                 $from = $to->copy()->subDays(366)->startOfDay();
             }
 
-            return [$from->utc(), $to->utc(), 'custom'];
+            return [$from->setTimezone(config('app.timezone')), $to->setTimezone(config('app.timezone')), 'custom'];
         }
         $days = array_key_exists((string) $request->query('days'), self::RANGES) ? (int) $request->query('days') : 30;
 
-        return [now(self::TIMEZONE)->subDays($days - 1)->startOfDay()->utc(), now(self::TIMEZONE)->endOfDay()->utc(), (string) $days];
+        return [now(self::TIMEZONE)->subDays($days - 1)->startOfDay()->setTimezone(config('app.timezone')), now(self::TIMEZONE)->endOfDay()->setTimezone(config('app.timezone')), (string) $days];
     }
 
     public function index(Request $request)

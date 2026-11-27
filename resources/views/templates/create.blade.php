@@ -17,6 +17,13 @@
     <div class="mb-5 rounded-xl bg-red-50 border border-red-100 text-red-800 px-4 py-3 text-sm"><b>Meta rejected it:</b> {{ $template->rejected_reason }}. Fix the content below and submit again.</div>
 @endif
 
+@if ($accounts->isEmpty())
+    <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 px-5 py-4 text-sm">
+        <b>Connect your WhatsApp number first.</b> Templates are sent to Meta for approval from your own WhatsApp Business account.
+        <a href="{{ route('whatsapp.index') }}" class="font-semibold underline">Go to WhatsApp Settings →</a>
+        <div class="text-xs mt-1">There are no credits in this panel: template approval is free, and message charges are paid by you directly to Meta.</div>
+    </div>
+@endif
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 <form method="POST" action="{{ $editing ? route('templates.update', $template) : route('templates.store') }}" id="tpl-form" enctype="multipart/form-data" class="xl:col-span-2 space-y-5">
     @csrf
@@ -96,7 +103,7 @@
         </div>
         <div id="examples" class="grid grid-cols-1 md:grid-cols-3 gap-2"></div>
         <label class="block"><span class="text-sm font-medium text-slate-600">Footer (optional)</span>
-            <input name="footer" value="{{ $f('footer', $editing ? null : 'Reply STOP to unsubscribe') }}" maxlength="60" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
+            <input name="footer" value="{{ $f('footer') }}" maxlength="60" placeholder="Leave empty for Utility templates" class="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5"></label>
 
         <div>
             <div class="flex items-center justify-between">
