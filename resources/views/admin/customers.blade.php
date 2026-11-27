@@ -2,7 +2,26 @@
 @php use App\Http\Controllers\Admin\AdminController; @endphp
 
 @section('content')
-<x-page-header title="Customers" subtitle="Every business using your panel." />
+<x-page-header title="Users / Customers" subtitle="Every business using the WhatsApp panel. Add a user here to give them their own full WhatsApp panel." />
+
+<details class="mb-5 bg-white rounded-2xl border-2 border-brand-200 shadow-sm p-5" @if ($errors->any()) open @endif>
+    <summary class="cursor-pointer font-semibold text-brand-700 flex items-center gap-2"><x-icon name="user-plus" class="w-5 h-5" /> Add user / customer</summary>
+    <form method="POST" action="{{ route('admin.customers.store') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+        @csrf
+        <input name="company" value="{{ old('company') }}" required maxlength="255" placeholder="Business name" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+        <input name="name" value="{{ old('name') }}" required maxlength="255" placeholder="Owner name" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+        <input type="email" name="email" value="{{ old('email') }}" required maxlength="255" placeholder="Login email" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+        <input name="phone" value="{{ old('phone') }}" maxlength="16" placeholder="Phone (optional)" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+        <select name="plan" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+            <option value="">{{ config('billing.trial_days') }}-day free trial</option>
+            @foreach (config('billing.plans') as $k => $p)<option value="{{ $k }}" @selected(old('plan') === $k)>{{ $p['name'] }} plan (paid outside)</option>@endforeach
+        </select>
+        <select name="months" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+            @foreach ([1, 3, 6, 12] as $m)<option value="{{ $m }}">{{ $m }} month{{ $m > 1 ? 's' : '' }}</option>@endforeach
+        </select>
+        <div class="md:col-span-3 flex items-center gap-3"><x-btn icon="user-plus">Create user</x-btn><span class="text-xs text-slate-500">Login details are shown once after creating. The user gets the full WhatsApp panel and connects their own number.</span></div>
+    </form>
+</details>
 
 <form class="flex flex-wrap gap-2 mb-4">
     <input name="q" value="{{ $q }}" placeholder="Search business, owner, email or GSTIN…" class="flex-1 min-w-[16rem] border border-slate-200 rounded-xl px-3 py-2.5 text-sm">

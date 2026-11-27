@@ -84,6 +84,11 @@
                 <span class="block text-brand-300">{{ $metaConnected ? $topBar['account']->display_phone_number : 'Connect your number' }}</span>
             </span>
         </a>
+        @if (auth()->user()->is_super_admin)
+            <a href="{{ route('admin.dashboard') }}" class="mx-3 mt-3 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600"><x-icon name="crown" /> Super Admin panel</a>
+        @elseif (auth()->user()->reseller_id)
+            <a href="{{ route('reseller.dashboard') }}" class="mx-3 mt-3 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600"><x-icon name="team" /> Partner panel</a>
+        @endif
         <form method="POST" action="{{ route('logout') }}" class="p-3 border-t border-white/10">
             @csrf
             <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-white/5 hover:text-white"><x-icon name="logout" /> Log out</button>

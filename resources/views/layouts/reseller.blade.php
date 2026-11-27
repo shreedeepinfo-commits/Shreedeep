@@ -10,7 +10,7 @@
     $me = app('reseller');
     $nav = array_filter([
         ['Overview', 'reseller.dashboard', 'home'],
-        ['Customers', 'reseller.customers', 'users'],
+        ['Users / Customers', 'reseller.customers', 'users'],
         $me->can_create_resellers ? ['Sub-resellers', 'reseller.resellers', 'team'] : null,
         ['Wallet', 'reseller.wallet', 'card'],
         ['Brand & prices', 'reseller.settings', 'cog'],
@@ -34,6 +34,10 @@
                 </a>
             @endforeach
         </nav>
+        <form method="POST" action="{{ route('my-panel') }}" class="px-3 pt-3 border-t border-white/10">
+            @csrf
+            <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600"><x-icon name="whatsapp" /> My WhatsApp panel</button>
+        </form>
         <form method="POST" action="{{ route('logout') }}" class="p-3 border-t border-white/10">
             @csrf
             <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-white/5 hover:text-white"><x-icon name="logout" /> Log out</button>

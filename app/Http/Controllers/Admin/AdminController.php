@@ -104,6 +104,32 @@ class AdminController extends Controller
         return back()->with('status', $msg);
     }
 
+    /** Create a direct user (customer) with a ready login: trial, or a plan granted by the super admin. */
+    public function storeCustomer(Request $request)
+    {
+        $data = $request->validate([
+            'company' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'regex:/^\+?\d{10,15}$/'],
+            'plan' => ['nullable', Rule::in(array_keys(config('billing.plans')))],
+            'months' => ['nullable', 'integer', 'min:1', 'max:36'],
+        ]);
+        $password = \Illuminate\Support\Str::password(12, symbols: false);
+        $workspace = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $password) {
+            $user = User::create(['name' => $data['name'], 'email' => $data['email'], 'password' => $password]);
+            $workspace = $user->createWorkspace($data['company']);
+            $workspace->forceFill(['billing_phone' => $data['phone'] ?? null, 'billing_email' => $data['email']]
+                + (! empty($data['plan']) ? ['plan' => $data['plan'], 'plan_cycle' => 'monthly', 'plan_ends_at' => now()->addMonthsNoOverflow((int) ($data['months'] ?? 1))] : []))->save();
+
+            return $workspace;
+        });
+
+        return redirect()->route('admin.customers.show', $workspace)
+            ->with('credentials', ['name' => $workspace->name, 'email' => $data['email'], 'password' => $password, 'url' => url('/login')])
+            ->with('status', $workspace->name.' is ready'.(! empty($data['plan']) ? ' on the '.config("billing.plans.{$data['plan']}.name").' plan.' : ' with a free trial.'));
+    }
+
     public function suspend(Workspace $workspace)
     {
         $workspace->forceFill(['suspended_at' => $workspace->suspended_at ? null : now()])->save();

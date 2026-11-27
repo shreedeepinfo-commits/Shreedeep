@@ -75,6 +75,7 @@ Route::post('/invite/{token}', [InvitationController::class, 'accept'])->middlew
 Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/customers', [AdminController::class, 'customers'])->name('customers');
+    Route::post('/customers', [AdminController::class, 'storeCustomer'])->name('customers.store');
     Route::get('/customers/{workspace}', [AdminController::class, 'customer'])->name('customers.show');
     Route::post('/customers/{workspace}/plan', [AdminController::class, 'plan'])->name('customers.plan');
     Route::post('/customers/{workspace}/suspend', [AdminController::class, 'suspend'])->name('customers.suspend');
@@ -113,6 +114,7 @@ Route::middleware(['auth', 'reseller'])->prefix('reseller')->name('reseller.')->
     Route::get('/settings', [ResellerPanelController::class, 'settings'])->name('settings');
     Route::put('/settings', [ResellerPanelController::class, 'updateSettings'])->name('settings.update');
 });
+Route::post('/my-panel', \App\Http\Controllers\MyPanelController::class)->middleware('auth')->name('my-panel');
 Route::post('/admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->middleware('auth')->name('admin.impersonate.stop');
 
 Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {

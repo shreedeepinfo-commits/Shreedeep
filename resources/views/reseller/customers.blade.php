@@ -9,7 +9,7 @@
 @endphp
 
 @section('content')
-<x-page-header title="Customers" subtitle="Businesses using your panel. Create, activate, renew and log in for them." />
+<x-page-header title="Users / Customers" subtitle="Each user gets their own full WhatsApp panel (campaigns, live chat, chatbot…). Create, activate, renew and open their panel." />
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     <div class="xl:col-span-2 space-y-4">
@@ -52,7 +52,7 @@
 
     <form id="new" method="POST" action="{{ route('reseller.customers.store') }}" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-3 h-fit">
         @csrf
-        <div class="font-semibold">Add customer</div>
+        <div class="font-semibold">Add user / customer</div>
         <div><label class="{{ $lb }}">Business name</label><input name="company" value="{{ old('company') }}" required maxlength="255" class="{{ $in }}"></div>
         <div><label class="{{ $lb }}">Owner name</label><input name="name" value="{{ old('name') }}" required maxlength="255" class="{{ $in }}"></div>
         <div><label class="{{ $lb }}">Owner email (login)</label><input type="email" name="email" value="{{ old('email') }}" required maxlength="255" class="{{ $in }}"></div>
@@ -65,7 +65,7 @@
             </select>
             <input type="hidden" name="plan"><input type="hidden" name="cycle">
         </div>
-        <x-btn icon="user-plus">Create customer</x-btn>
+        <x-btn icon="user-plus">Create user</x-btn>
         <p class="text-xs text-slate-500">Login and workspace are created instantly. The customer connects their own WhatsApp number and adds their card in Meta for message charges.</p>
     </form>
 </div>
