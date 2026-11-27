@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ComingSoonController;
@@ -139,6 +140,9 @@ Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {
         Route::post('/subscription/payments/{payment}/razorpay', [SubscriptionController::class, 'razorpayCallback'])->name('subscription.razorpay.callback');
         Route::get('/subscription/payments/{payment}/cashfree', [SubscriptionController::class, 'cashfreeReturn'])->name('subscription.cashfree.return');
         Route::get('/subscription/invoices/{invoice}', [SubscriptionController::class, 'invoice'])->name('subscription.invoice');
+
+        Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
 
         Route::get('/developers', [DeveloperController::class, 'index'])->name('developers.index');
         Route::post('/developers/keys', [DeveloperController::class, 'storeKey'])->name('developers.keys.store');

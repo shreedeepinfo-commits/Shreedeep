@@ -28,7 +28,7 @@
         ],
         'Business' => [
             ['Team Management', 'team.index', 'team'],
-            ['Analytics', ['soon', 'analytics'], 'chart'],
+            ['Analytics', 'analytics.index', 'chart'],
             ['Subscription', 'subscription.index', 'card'],
             ['WhatsApp Settings', 'whatsapp.index', 'cog'],
             ['Help & Support', ['soon', 'support'], 'help'],
