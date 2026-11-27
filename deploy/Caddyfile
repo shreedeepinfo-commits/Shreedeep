@@ -1,0 +1,44 @@
+# Caddy config for the Shreedeep panel. Installed to /etc/caddy/Caddyfile by setup-server.sh.
+# - The main panel domain gets a normal certificate.
+# - Reseller subdomains (*.APP_DOMAIN) and reseller custom domains (CNAME to APP_DOMAIN) get certificates
+#   on demand, but only after the panel confirms the domain is registered (/internal/tls-check).
+{
+	email {$ACME_EMAIL}
+	on_demand_tls {
+		ask http://127.0.0.1:8081/internal/tls-check
+	}
+}
+
+(laravel) {
+	root * /var/www/shreedeep/public
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	php_fastcgi unix//run/php/php8.3-fpm.sock
+	file_server
+}
+
+{$APP_DOMAIN} {
+	import laravel
+}
+
+# Reseller subdomains and custom domains.
+https:// {
+	tls {
+		on_demand
+	}
+	import laravel
+}
+
+# Local only: lets Caddy ask the panel which domains it may issue certificates for.
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	import laravel
+}

@@ -25,7 +25,7 @@
             <div><b>Your panel address:</b> <a href="{{ $me->url() }}/login" target="_blank" class="text-brand-700">{{ $me->slug }}.{{ config('reseller.base_domain') }}</a></div>
             <label class="{{ $lb }}">Own domain (optional)</label>
             <input name="custom_domain" value="{{ old('custom_domain', $me->custom_domain) }}" placeholder="wa.yourcompany.com" class="{{ $in }}">
-            <p class="text-xs text-slate-500">Add a DNS <b>CNAME</b> record from your domain to <code>{{ config('reseller.base_domain') }}</code>, then save it here. SSL is issued automatically on the server.</p>
+            <p class="text-xs text-slate-500">Add a DNS <b>CNAME</b> record from your domain to <code>{{ \App\Support\Branding::mainHost() }}</code>, then save it here. SSL is issued automatically on the server.</p>
         </div>
     </div>
 

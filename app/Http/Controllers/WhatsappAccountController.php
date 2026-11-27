@@ -5,16 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\WhatsappAccount;
 use App\Services\WhatsApp\CloudApiException;
 use App\Services\WhatsApp\ConnectNumber;
+use App\Support\Branding;
 use App\Support\CurrentWorkspace;
 use Illuminate\Http\Request;
 
 class WhatsappAccountController extends Controller
 {
-    public function index()
+    public function index(Request $request, CurrentWorkspace $current)
     {
+        // On a reseller's own domain, Meta signup runs on the main domain in a popup.
+        $main = Branding::mainHost();
+        $bridgeUrl = $main !== '' && $request->getHost() !== $main
+            ? 'https://'.$main.'/connect/whatsapp?t='.urlencode(WhatsappSignupBridgeController::ticket($current->get(), $request->user()->id, $request->getSchemeAndHttpHost()))
+            : null;
+
         return view('whatsapp.index', [
             'accounts' => WhatsappAccount::latest()->get(),
             'signupReady' => config('whatsapp.app_id') && config('whatsapp.config_id'),
+            'bridgeUrl' => $bridgeUrl,
+            'bridgeOrigin' => 'https://'.$main,
         ]);
     }
 

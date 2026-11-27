@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-    // Brand colours: Shree Deep blue (#0B4E99) by default, or the reseller's colour on white-label panels.
+    // Brand colours: the default blue, or the reseller's colour on white-label panels.
     tailwind.config = {
         theme: {
             extend: {

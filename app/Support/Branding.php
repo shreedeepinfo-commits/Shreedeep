@@ -16,6 +16,29 @@ class Branding
         500 => '#1a69bd', 600 => '#0B4E99', 700 => '#0a437f', 800 => '#0b3866', 900 => '#0a2a4d', 950 => '#061a31',
     ];
 
+    /** Host of the main panel (APP_URL). Meta Embedded Signup and webhooks only run here. */
+    public static function mainHost(): string
+    {
+        return strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+    }
+
+    /** Hosts the server may get an HTTPS certificate for: the main panel, reseller subdomains and verified reseller domains. */
+    public static function servesHost(string $host): bool
+    {
+        $host = strtolower(trim($host, ". \t"));
+        if ($host === '' || $host === self::mainHost()) {
+            return $host !== '';
+        }
+        $base = strtolower((string) config('reseller.base_domain'));
+        if ($base !== '' && str_ends_with($host, '.'.$base)) {
+            $slug = substr($host, 0, -strlen('.'.$base));
+
+            return Reseller::where('slug', $slug)->whereNull('suspended_at')->exists();
+        }
+
+        return Reseller::where('custom_domain', $host)->whereNull('suspended_at')->exists();
+    }
+
     public function reseller(): ?Reseller
     {
         return $this->reseller;
