@@ -12,8 +12,10 @@
         ['Customers', 'admin.customers', 'users'],
         ['Payments & invoices', 'admin.payments', 'card'],
         ['Plans', 'admin.plans', 'crown'],
+        ['Support tickets', 'admin.tickets', 'help'],
     ];
     $user = auth()->user();
+    $openTickets = \App\Models\SupportTicket::withoutGlobalScopes()->where('status', 'open')->count();
 @endphp
 <div class="flex min-h-screen">
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-brand-950 text-brand-100 flex flex-col -translate-x-full lg:translate-x-0 transition-transform">
@@ -29,6 +31,7 @@
                 @php $active = $route === 'admin.dashboard' ? request()->routeIs('admin.dashboard') : request()->routeIs($route.'*'); @endphp
                 <a href="{{ route($route) }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-0.5 transition {{ $active ? 'bg-brand-600 text-white font-semibold shadow-lg shadow-brand-900/50' : 'hover:bg-white/5 hover:text-white' }}">
                     <x-icon :name="$icon" /><span class="flex-1">{{ $label }}</span>
+                    @if ($route === 'admin.tickets' && $openTickets)<span class="text-[11px] min-w-5 px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-semibold text-center">{{ $openTickets }}</span>@endif
                 </a>
             @endforeach
         </nav>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\CampaignController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\QuickReplyController;
+use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
 use App\Http\Controllers\SubscriptionController;
@@ -62,6 +64,10 @@ Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/payments', [AdminController::class, 'payments'])->name('payments');
     Route::get('/invoices/{invoice}', [AdminController::class, 'invoice'])->name('invoices.show');
     Route::get('/plans', [AdminController::class, 'plans'])->name('plans');
+    Route::get('/tickets', [SupportTicketController::class, 'index'])->name('tickets');
+    Route::get('/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('tickets.reply');
+    Route::post('/tickets/{ticket}/status', [SupportTicketController::class, 'status'])->name('tickets.status');
 });
 Route::post('/admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->middleware('auth')->name('admin.impersonate.stop');
 
@@ -71,6 +77,12 @@ Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::post('/workspaces/switch', [WorkspaceController::class, 'switch'])->name('workspaces.switch');
     Route::get('/soon/{feature}', ComingSoonController::class)->name('soon');
+
+    Route::get('/support', [SupportController::class, 'index'])->name('support.index');
+    Route::post('/support', [SupportController::class, 'store'])->middleware('throttle:10,1')->name('support.store');
+    Route::get('/support/{ticket}', [SupportController::class, 'show'])->name('support.show');
+    Route::post('/support/{ticket}/reply', [SupportController::class, 'reply'])->middleware('throttle:20,1')->name('support.reply');
+    Route::post('/support/{ticket}/close', [SupportController::class, 'close'])->name('support.close');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureActiveSubscription
 {
-    private const ALWAYS_ALLOWED = ['subscription.*', 'logout', 'profile.*', 'workspaces.switch', 'admin.impersonate.stop'];
+    private const ALWAYS_ALLOWED = ['subscription.*', 'support.*', 'logout', 'profile.*', 'workspaces.switch', 'admin.impersonate.stop'];
 
     public function __construct(private CurrentWorkspace $current) {}
 
