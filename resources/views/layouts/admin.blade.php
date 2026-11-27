@@ -10,6 +10,7 @@
     $nav = [
         ['Overview', 'admin.dashboard', 'home'],
         ['Customers', 'admin.customers', 'users'],
+        ['Resellers', 'admin.resellers', 'team'],
         ['Payments & invoices', 'admin.payments', 'card'],
         ['Plans', 'admin.plans', 'crown'],
         ['Support tickets', 'admin.tickets', 'help'],
@@ -65,6 +66,7 @@
                     @foreach ($errors->all() as $error)<div>{{ $error }}</div>@endforeach
                 </div>
             @endif
+            @include('partials.credentials')
             @yield('content')
         </main>
     </div>

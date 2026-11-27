@@ -29,6 +29,8 @@ class SubscriptionController extends Controller
             ]),
             'gateways' => self::gateways(),
             'payments' => Payment::with('invoice')->latest('id')->limit(50)->get(),
+            'reseller' => $workspace->reseller,
+            'setupFee' => $workspace->reseller_id ? 0 : Billing::setupFeeDue($workspace),
         ]);
     }
 
@@ -66,6 +68,9 @@ class SubscriptionController extends Controller
             'gateway' => ['required', Rule::in(self::gateways())],
         ], ['gateway.in' => 'Online payment is not set up yet. Please contact support.', 'gateway.required' => 'Online payment is not set up yet. Please contact support.']);
         $workspace = $this->current->get();
+        if ($workspace->reseller_id) {
+            return back()->withErrors(['plan' => 'Your plan is managed by '.$workspace->reseller->name.'. Please contact them to renew.']);
+        }
         if (! $workspace->billing_state) {
             return back()->withErrors(['billing_state' => 'Please fill your billing details first (needed for the GST invoice).']);
         }

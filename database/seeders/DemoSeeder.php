@@ -139,6 +139,31 @@ class DemoSeeder extends Seeder
         }
     }
 
+    /** Demo white-label partner (reseller@example.com) with a sub-reseller and customers. */
+    private function resellers(): void
+    {
+        if (User::where('email', 'reseller@example.com')->exists()) {
+            return;
+        }
+        $costs = ['starter' => 600, 'growth' => 1500, 'pro' => 3000];
+        [$partner] = \App\Services\Resellers\Provisioning::createReseller(null, [
+            'name' => 'Digital Growth Agency', 'slug' => 'digitalgrowth', 'contact_name' => 'Vikas (Reseller)', 'email' => 'reseller@example.com',
+            'password' => 'password', 'phone' => '919812345678', 'costs' => $costs, 'trial_days' => 7, 'can_create_resellers' => true,
+        ]);
+        $partner->update(['color' => '#7c3aed', 'prices' => ['starter' => 1199, 'growth' => 2999, 'pro' => 5999]]);
+        \App\Services\Resellers\Wallet::credit($partner, 2500000, 'recharge', 'Opening balance (UPI)');
+
+        foreach ([['Gupta Sweets', 'gupta@example.com', 'Raj Gupta', 'growth'], ['Joshi Coaching', 'joshi@example.com', 'Meera Joshi', null]] as [$company, $email, $name, $plan]) {
+            \App\Services\Resellers\Provisioning::createCustomer($partner, ['company' => $company, 'email' => $email, 'name' => $name, 'password' => 'password', 'plan' => $plan, 'cycle' => 'monthly']);
+        }
+
+        [$sub] = \App\Services\Resellers\Provisioning::createReseller($partner, [
+            'name' => 'Local Biz Solutions', 'slug' => 'localbiz', 'contact_name' => 'Sunil (Sub-reseller)', 'email' => 'subreseller@example.com',
+            'password' => 'password', 'costs' => ['starter' => 800, 'growth' => 1900, 'pro' => 3600], 'trial_days' => 5,
+        ]);
+        \App\Services\Resellers\Wallet::transfer($partner, $sub, 500000);
+    }
+
     private function extras(int $ws): void
     {
         $agent = User::firstOrCreate(['email' => 'agent@example.com'], ['name' => 'Ravi Agent', 'password' => 'password']);
@@ -162,6 +187,7 @@ class DemoSeeder extends Seeder
         }
 
         $this->platform();
+        $this->resellers();
 
         // Keep the demo workspace usable: a fresh trial when it has no paid plan and the trial ran out.
         $workspace = Workspace::find($ws);

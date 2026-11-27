@@ -18,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(CurrentWorkspace::class);
+        $this->app->scoped(\App\Support\Branding::class);
         // Tests run many requests in one process; reset per-request view data.
         $this->app->terminating(fn () => \App\View\Composers\TopBarComposer::flush());
     }

@@ -143,8 +143,8 @@
                 <form method="POST" action="{{ route('admin.impersonate.stop') }}" class="mb-5 rounded-xl bg-violet-50 border border-violet-200 text-violet-800 px-4 py-3 text-sm flex flex-wrap items-center gap-3">
                     @csrf
                     <x-icon name="crown" class="w-5 h-5" />
-                    <span class="flex-1">Super admin view: you are inside <b>{{ $currentWorkspace?->name }}</b>, signed in as its owner {{ auth()->user()->name }}.</span>
-                    <button class="font-semibold underline">Back to Super Admin</button>
+                    <span class="flex-1">{{ session('impersonator_label', 'Super Admin') }} view: you are inside <b>{{ $currentWorkspace?->name }}</b>, signed in as its owner {{ auth()->user()->name }}.</span>
+                    <button class="font-semibold underline">Back to {{ session('impersonator_label', 'Super Admin') }}</button>
                 </form>
             @endif
             @if ($currentWorkspace ?? null)

@@ -8,6 +8,9 @@
 return [
     'currency' => 'INR',
 
+    // One-time setup fee (OTC) in rupees, added to a customer's first paid plan. 0 = none.
+    'setup_fee' => (float) env('BILLING_SETUP_FEE', 0),
+
     'trial_days' => (int) env('BILLING_TRIAL_DAYS', 14),
     'trial_plan' => 'growth', // limits used during the free trial
 

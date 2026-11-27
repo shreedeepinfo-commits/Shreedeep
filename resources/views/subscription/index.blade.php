@@ -52,6 +52,10 @@
     </div>
 </div>
 
+@if ($setupFee > 0)
+    <p class="text-sm text-slate-600 mb-3">A one-time setup fee of <b>₹{{ Num::indian($setupFee) }}</b> + GST is added to your first payment.</p>
+@endif
+<p class="text-xs text-slate-500 mb-4">Plans are the panel rental only. WhatsApp message charges are paid by you directly to Meta (card added in your Meta Business account).</p>
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
     @foreach ($plans as $key => $p)
         @php $current = $active && $workspace->plan === $key; @endphp
@@ -63,7 +67,7 @@
             </div>
             <div class="text-sm text-slate-500">{{ $p['tagline'] }}</div>
             @foreach ($cycles as $ck => $c)
-                @php $price = Billing::price($key, $ck); @endphp
+                @php $price = $reseller ? round($reseller->price($key) * $c['months'] * (100 - $c['discount']) / 100, 2) : Billing::price($key, $ck); @endphp
                 <div class="price mt-4" data-cycle="{{ $ck }}">
                     <div class="text-3xl font-bold text-slate-900">₹{{ Num::indian($price / $c['months']) }}<span class="text-sm font-normal text-slate-500">/month</span></div>
                     <div class="text-xs text-slate-500 mt-1">
@@ -80,6 +84,13 @@
                     <li class="flex gap-2"><x-icon name="check" class="w-4 h-4 text-emerald-600 mt-0.5" />{{ $f }}</li>
                 @endforeach
             </ul>
+            @if ($reseller)
+                <div class="mt-6 rounded-xl bg-brand-50 border border-brand-100 p-3 text-sm text-brand-800 text-center">
+                    {{ $current ? 'To renew' : 'To activate' }}, contact {{ $reseller->name }}
+                    @if ($reseller->support_phone)<br><a href="https://wa.me/{{ preg_replace('/\D+/', '', $reseller->support_phone) }}" class="font-semibold">{{ $reseller->support_phone }}</a>@endif
+                    @if ($reseller->support_email)<br><a href="mailto:{{ $reseller->support_email }}" class="font-semibold">{{ $reseller->support_email }}</a>@endif
+                </div>
+            @else
             <form method="POST" action="{{ route('subscription.checkout') }}" class="mt-6 space-y-2">
                 @csrf
                 <input type="hidden" name="plan" value="{{ $key }}">
@@ -96,6 +107,7 @@
                 </button>
                 @if (! $gateways)<p class="text-xs text-slate-500 text-center">Online payment is being set up. Contact support to activate.</p>@endif
             </form>
+            @endif
         </div>
     @endforeach
 </div>

@@ -27,6 +27,12 @@ class User extends Authenticatable
         ];
     }
 
+    /** The reseller account this login manages, if any. */
+    public function reseller(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Reseller::class);
+    }
+
     public function workspaces(): BelongsToMany
     {
         return $this->belongsToMany(Workspace::class, 'workspace_user')->withPivot('role')->withTimestamps();

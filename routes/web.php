@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\ResellerController as AdminResellerController;
 use App\Http\Controllers\Admin\SupportTicketController;
+use App\Http\Controllers\Reseller\PanelController as ResellerPanelController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\CampaignController;
@@ -76,6 +78,31 @@ Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('tickets.reply');
     Route::post('/tickets/{ticket}/status', [SupportTicketController::class, 'status'])->name('tickets.status');
+    Route::get('/resellers', [AdminResellerController::class, 'index'])->name('resellers');
+    Route::post('/resellers', [AdminResellerController::class, 'store'])->name('resellers.store');
+    Route::get('/resellers/{reseller}', [AdminResellerController::class, 'show'])->name('resellers.show');
+    Route::put('/resellers/{reseller}', [AdminResellerController::class, 'update'])->name('resellers.update');
+    Route::post('/resellers/{reseller}/wallet', [AdminResellerController::class, 'wallet'])->name('resellers.wallet');
+    Route::post('/resellers/{reseller}/suspend', [AdminResellerController::class, 'suspend'])->name('resellers.suspend');
+    Route::post('/resellers/{reseller}/impersonate', [AdminResellerController::class, 'impersonate'])->name('resellers.impersonate');
+});
+
+// Reseller (white-label partner) panel.
+Route::middleware(['auth', 'reseller'])->prefix('reseller')->name('reseller.')->group(function () {
+    Route::get('/', [ResellerPanelController::class, 'dashboard'])->name('dashboard');
+    Route::get('/customers', [ResellerPanelController::class, 'customers'])->name('customers');
+    Route::post('/customers', [ResellerPanelController::class, 'storeCustomer'])->middleware('throttle:30,1')->name('customers.store');
+    Route::post('/customers/{workspace}/activate', [ResellerPanelController::class, 'activate'])->name('customers.activate');
+    Route::post('/customers/{workspace}/toggle', [ResellerPanelController::class, 'toggle'])->name('customers.toggle');
+    Route::post('/customers/{workspace}/impersonate', [ResellerPanelController::class, 'impersonate'])->name('customers.impersonate');
+    Route::get('/resellers', [ResellerPanelController::class, 'resellers'])->name('resellers');
+    Route::post('/resellers', [ResellerPanelController::class, 'storeReseller'])->middleware('throttle:30,1')->name('resellers.store');
+    Route::put('/resellers/{child}', [ResellerPanelController::class, 'updateReseller'])->name('resellers.update');
+    Route::post('/resellers/{child}/transfer', [ResellerPanelController::class, 'transfer'])->name('resellers.transfer');
+    Route::post('/resellers/{child}/suspend', [ResellerPanelController::class, 'suspendReseller'])->name('resellers.suspend');
+    Route::get('/wallet', [ResellerPanelController::class, 'wallet'])->name('wallet');
+    Route::get('/settings', [ResellerPanelController::class, 'settings'])->name('settings');
+    Route::put('/settings', [ResellerPanelController::class, 'updateSettings'])->name('settings.update');
 });
 Route::post('/admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->middleware('auth')->name('admin.impersonate.stop');
 

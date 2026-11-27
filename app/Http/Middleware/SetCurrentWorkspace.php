@@ -18,6 +18,9 @@ class SetCurrentWorkspace
         if ($user?->is_super_admin) {
             return redirect()->route('admin.dashboard'); // the platform owner has the admin panel, not a customer workspace
         }
+        if ($user?->reseller_id && ! $user->workspaces()->exists()) {
+            return redirect()->route('reseller.dashboard'); // a reseller login without its own WhatsApp workspace
+        }
         $workspace = $user?->currentWorkspace;
 
         if ($user && (! $workspace || ! $user->belongsToWorkspace($workspace))) {
