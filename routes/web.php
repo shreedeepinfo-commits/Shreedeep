@@ -11,6 +11,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactGroupController;
 use App\Http\Controllers\CrmController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeveloperController;
 use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\InvitationController;
@@ -138,6 +139,16 @@ Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {
         Route::post('/subscription/payments/{payment}/razorpay', [SubscriptionController::class, 'razorpayCallback'])->name('subscription.razorpay.callback');
         Route::get('/subscription/payments/{payment}/cashfree', [SubscriptionController::class, 'cashfreeReturn'])->name('subscription.cashfree.return');
         Route::get('/subscription/invoices/{invoice}', [SubscriptionController::class, 'invoice'])->name('subscription.invoice');
+
+        Route::get('/developers', [DeveloperController::class, 'index'])->name('developers.index');
+        Route::post('/developers/keys', [DeveloperController::class, 'storeKey'])->name('developers.keys.store');
+        Route::delete('/developers/keys/{key}', [DeveloperController::class, 'revokeKey'])->name('developers.keys.destroy');
+        Route::post('/developers/webhooks', [DeveloperController::class, 'storeWebhook'])->name('developers.webhooks.store');
+        Route::put('/developers/webhooks/{endpoint}', [DeveloperController::class, 'updateWebhook'])->name('developers.webhooks.update');
+        Route::post('/developers/webhooks/{endpoint}/toggle', [DeveloperController::class, 'toggleWebhook'])->name('developers.webhooks.toggle');
+        Route::post('/developers/webhooks/{endpoint}/test', [DeveloperController::class, 'testWebhook'])->middleware('throttle:10,1')->name('developers.webhooks.test');
+        Route::delete('/developers/webhooks/{endpoint}', [DeveloperController::class, 'destroyWebhook'])->name('developers.webhooks.destroy');
+        Route::post('/developers/deliveries/{delivery}/retry', [DeveloperController::class, 'retryDelivery'])->name('developers.deliveries.retry');
 
         Route::resource('automations', AutomationController::class)->except('show');
         Route::post('/automations/{automation}/toggle', [AutomationController::class, 'toggle'])->name('automations.toggle');

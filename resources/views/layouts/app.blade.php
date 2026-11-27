@@ -24,7 +24,7 @@
         ],
         'Developers' => [
             ['Integrations', ['soon', 'integrations'], 'plug'],
-            ['API & Webhooks', ['soon', 'api'], 'code'],
+            ['API & Webhooks', 'developers.index', 'code'],
         ],
         'Business' => [
             ['Team Management', 'team.index', 'team'],

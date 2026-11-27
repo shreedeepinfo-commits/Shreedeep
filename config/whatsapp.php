@@ -14,6 +14,9 @@ return [
     'messages_per_second' => (int) env('WHATSAPP_MESSAGES_PER_SECOND', 20),
     // Queue used for campaign sends.
     'send_queue' => env('WHATSAPP_SEND_QUEUE', 'campaigns'),
+
+    // Public API requests per minute, per API key.
+    'api_per_minute' => (int) env('API_RATE_PER_MINUTE', 120),
     // Approximate Meta charge per delivered template message in INR, by category, for the cost estimate
     // shown before sending (India rates; Meta bills the customer directly). Update when Meta changes prices.
     'rates' => [

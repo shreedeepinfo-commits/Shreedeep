@@ -73,8 +73,15 @@ class CampaignLauncher
     {
         $pending = $campaign->messages()->withoutGlobalScopes()->where('status', 'queued')->exists();
         if (! $pending) {
-            Campaign::withoutGlobalScopes()->whereKey($campaign->id)->where('status', 'running')
+            $done = Campaign::withoutGlobalScopes()->whereKey($campaign->id)->where('status', 'running')
                 ->update(['status' => 'completed', 'completed_at' => now()]);
+            if ($done) {
+                $counts = $campaign->messages()->withoutGlobalScopes()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status');
+                \App\Services\Api\Webhooks::dispatch($campaign->workspace_id, 'campaign.completed', [
+                    'id' => $campaign->id, 'name' => $campaign->name, 'completed_at' => now()->toIso8601String(),
+                    'counts' => ['total' => $counts->sum()] + $counts->all(),
+                ]);
+            }
         }
     }
 }

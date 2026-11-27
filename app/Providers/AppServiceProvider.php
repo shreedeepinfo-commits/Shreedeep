@@ -26,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', \App\View\Composers\TopBarComposer::class);
 
         // Campaign sends are throttled per WhatsApp number (whatsapp_account_id).
+        // Public API: per key, per minute.
+        RateLimiter::for('api', fn (\Illuminate\Http\Request $request) => Limit::perMinute(config('whatsapp.api_per_minute', 120))
+            ->by('api:'.($request->attributes->get('api_key_id') ?? $request->ip())));
+
         RateLimiter::for('whatsapp-send', function (SendCampaignMessage|SendAutomationTemplate $job) {
             $accountId = $job instanceof SendCampaignMessage
                 ? Message::withoutGlobalScopes()->whereKey($job->messageId)->value('whatsapp_account_id')

@@ -142,6 +142,9 @@ class ProcessWhatsappWebhook implements ShouldQueue
 
         $keyword = mb_strtolower(trim($body));
         if (in_array($keyword, self::OPT_OUT_WORDS, true)) {
+            if (! $contact->opted_out_at) {
+                \App\Services\Api\Webhooks::dispatch($account->workspace_id, 'contact.opted_out', ['phone' => $phone, 'contact_id' => $contact->id ?? null]);
+            }
             $contact->opted_out_at = now();
         } elseif (in_array($keyword, self::OPT_IN_WORDS, true)) {
             $contact->opted_out_at = null;
