@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Jobs\SendAutomationTemplate;
+use App\Jobs\SendIntegrationTemplate;
 use App\Jobs\SendCampaignMessage;
 use App\Models\Message;
 use App\Models\MessageTemplate;
@@ -30,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (\Illuminate\Http\Request $request) => Limit::perMinute(config('whatsapp.api_per_minute', 120))
             ->by('api:'.($request->attributes->get('api_key_id') ?? $request->ip())));
 
-        RateLimiter::for('whatsapp-send', function (SendCampaignMessage|SendAutomationTemplate $job) {
+        RateLimiter::for('whatsapp-send', function (SendCampaignMessage|SendAutomationTemplate|SendIntegrationTemplate $job) {
             $accountId = $job instanceof SendCampaignMessage
                 ? Message::withoutGlobalScopes()->whereKey($job->messageId)->value('whatsapp_account_id')
                 : MessageTemplate::withoutGlobalScopes()->whereKey($job->step['template_id'] ?? 0)->value('whatsapp_account_id');

@@ -23,7 +23,7 @@
             ['WhatsApp Flows', ['soon', 'whatsapp-flows'], 'form'],
         ],
         'Developers' => [
-            ['Integrations', ['soon', 'integrations'], 'plug'],
+            ['Integrations', 'integrations.index', 'plug'],
             ['API & Webhooks', 'developers.index', 'code'],
         ],
         'Business' => [
