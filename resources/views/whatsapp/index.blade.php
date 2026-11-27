@@ -48,11 +48,26 @@
                     <option value="template">Template</option>
                     <option value="text">Text (only inside 24h window)</option>
                 </select></label>
-            <label class="block"><span class="text-xs">Template name / language</span>
-                <div class="flex gap-1 mt-1"><input name="template" value="hello_world" class="w-full border rounded px-2 py-1"><input name="language" value="en_US" class="w-20 border rounded px-2 py-1"></div></label>
+            @php($approved = $templates[$account->id] ?? collect())
+            <label class="block"><span class="text-xs">Approved template</span>
+                @if ($approved->isNotEmpty())
+                    <select name="template" class="mt-1 w-full border rounded px-2 py-1"
+                            onchange="this.form.language.value = this.selectedOptions[0].dataset.lang">
+                        @foreach ($approved as $t)
+                            <option value="{{ $t->name }}" data-lang="{{ $t->language }}" @selected(old('template') === $t->name)>{{ $t->name }} ({{ $t->language }})</option>
+                        @endforeach
+                    </select>
+                    <input type="hidden" name="language" value="{{ old('language', $approved->first()->language) }}">
+                @else
+                    <div class="flex gap-1 mt-1"><input name="template" value="{{ old('template') }}" placeholder="template_name" class="w-full border rounded px-2 py-1"><input name="language" value="{{ old('language', 'en') }}" class="w-16 border rounded px-2 py-1"></div>
+                @endif
+            </label>
             <label class="block"><span class="text-xs">Text body</span>
                 <input name="body" placeholder="Hello from the panel" class="mt-1 w-full border rounded px-2 py-1"></label>
             <button class="rounded bg-brand-600 text-white px-4 py-2 font-semibold">Send</button>
+            @if ($approved->isEmpty())
+                <p class="md:col-span-5 text-xs text-amber-700">No approved template yet. <a href="{{ route('templates.index') }}" class="underline font-semibold">Create a template</a> and wait for Meta approval (hello_world works only on Meta test numbers). Text messages work only if this person messaged you in the last 24 hours.</p>
+            @endif
         </form>
     </div>
 @empty

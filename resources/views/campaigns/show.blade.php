@@ -92,7 +92,7 @@
                         <td class="px-5 py-3 text-xs text-slate-500">{{ $m->sent_at?->format('d M, h:i A') }}</td>
                         <td class="px-5 py-3 text-xs text-slate-500">{{ $m->delivered_at?->format('h:i A') }}</td>
                         <td class="px-5 py-3 text-xs text-slate-500">{{ $m->read_at?->format('h:i A') }}</td>
-                        <td class="px-5 py-3 text-xs text-red-600 max-w-xs">{{ $m->error_message }}</td>
+                        <td class="px-5 py-3 text-xs text-red-600 max-w-xs">{{ \App\Support\MetaErrors::explain($m->error_code, $m->error_message) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400">No recipients here.</td></tr>
@@ -127,7 +127,7 @@
                     @foreach ($failures as $f)
                         <div class="flex items-start gap-3 text-sm">
                             <span class="shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg bg-red-50 text-red-700">{{ number_format($f->c) }}</span>
-                            <span class="text-slate-600">{{ $f->error_message ?: 'Unknown error' }}</span>
+                            <span class="text-slate-600">{{ \App\Support\MetaErrors::explain($f->error_code, $f->error_message) }}</span>
                         </div>
                     @endforeach
                 </div>

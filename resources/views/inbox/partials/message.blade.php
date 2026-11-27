@@ -28,7 +28,7 @@
             @if ($out && $m->type === 'interactive' && ! $m->user_id)<span class="px-1.5 rounded bg-violet-50 text-violet-700">Bot</span>@endif
             @if ($out && $m->user)<span>{{ Str::before($m->user->name, ' ') }} ·</span>@endif
             <span>{{ $m->created_at->format('d M, h:i A') }}</span>
-            @if ($out)<span class="{{ $m->status === 'read' ? 'text-sky-500' : ($m->status === 'failed' ? 'text-red-600 font-bold' : '') }}" title="{{ ucfirst($m->status) }}{{ $m->error_message ? ': '.$m->error_message : '' }}">{{ $tick }}</span>@endif
+            @if ($out)<span class="{{ $m->status === 'read' ? 'text-sky-500' : ($m->status === 'failed' ? 'text-red-600 font-bold' : '') }}" title="{{ ucfirst($m->status) }}{{ $m->error_message ? ': '.\App\Support\MetaErrors::explain($m->error_code, $m->error_message) : '' }}">{{ $tick }}</span>@endif
         </div>
     </div>
 </div>
