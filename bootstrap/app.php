@@ -19,7 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscribed' => \App\Http\Middleware\EnsureActiveSubscription::class,
             'super-admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
             'api.key' => \App\Http\Middleware\AuthenticateApiKey::class,
+            'reseller' => \App\Http\Middleware\EnsureReseller::class,
         ]);
+        $middleware->web(append: [\App\Http\Middleware\ApplyBranding::class]);
         // Resolve the workspace before route model binding so bound models are tenant-scoped.
         $middleware->prependToPriorityList(
             before: \Illuminate\Routing\Middleware\SubstituteBindings::class,

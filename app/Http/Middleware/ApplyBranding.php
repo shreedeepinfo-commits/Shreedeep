@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Support\Branding;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class ApplyBranding
+{
+    public function __construct(private Branding $branding) {}
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $this->branding->apply($this->branding->resolve($request, $request->user()));
+
+        return $next($request);
+    }
+}

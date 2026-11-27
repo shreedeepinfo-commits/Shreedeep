@@ -15,11 +15,17 @@ class Workspace extends Model
     protected $fillable = [
         'name', 'slug', 'owner_id', 'plan', 'plan_cycle', 'trial_ends_at', 'plan_ends_at', 'auto_assign', 'last_assigned_user_id',
         'billing_name', 'billing_gstin', 'billing_address', 'billing_state', 'billing_email', 'billing_phone',
+        'reseller_id', 'auto_renew',
     ];
 
     protected function casts(): array
     {
-        return ['trial_ends_at' => 'datetime', 'plan_ends_at' => 'datetime', 'suspended_at' => 'datetime', 'auto_assign' => 'boolean'];
+        return ['trial_ends_at' => 'datetime', 'plan_ends_at' => 'datetime', 'suspended_at' => 'datetime', 'auto_assign' => 'boolean', 'auto_renew' => 'boolean', 'renew_failed_at' => 'datetime'];
+    }
+
+    public function reseller(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Reseller::class);
     }
 
     public function isSuspended(): bool

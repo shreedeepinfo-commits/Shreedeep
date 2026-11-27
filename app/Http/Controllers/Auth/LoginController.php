@@ -38,7 +38,11 @@ class LoginController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
 
-        return redirect()->intended(route(Auth::user()->is_super_admin ? 'admin.dashboard' : 'dashboard'));
+        return redirect()->intended(route(match (true) {
+            (bool) Auth::user()->is_super_admin => 'admin.dashboard',
+            Auth::user()->reseller_id !== null => 'reseller.dashboard',
+            default => 'dashboard',
+        }));
     }
 
     public function destroy(Request $request)

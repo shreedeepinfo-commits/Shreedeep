@@ -135,13 +135,15 @@ class AdminController extends Controller
 
     public function stopImpersonating(Request $request)
     {
-        $admin = User::find($request->session()->pull('impersonator_id'));
-        abort_unless($admin?->is_super_admin, 403);
+        $back = User::find($request->session()->pull('impersonator_id'));
+        abort_unless($back?->is_super_admin || $back?->reseller_id, 403);
 
-        Auth::login($admin);
+        Auth::login($back);
         $request->session()->regenerate();
 
-        return redirect()->route('admin.customers')->with('status', 'Back in the super admin panel.');
+        return $back->is_super_admin
+            ? redirect()->route('admin.customers')->with('status', 'Back in the super admin panel.')
+            : redirect()->route('reseller.customers')->with('status', 'Back in your reseller panel.');
     }
 
     public function payments(Request $request)

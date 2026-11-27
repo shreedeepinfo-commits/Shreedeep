@@ -37,14 +37,27 @@ class Billing
 
     public static function newOrder(Workspace $workspace, ?User $user, string $plan, string $cycle, string $gateway): Payment
     {
-        $amount = self::price($plan, $cycle);
+        $setup = self::setupFeeDue($workspace);
+        $amount = self::price($plan, $cycle) + $setup;
         $tax = self::gst($amount);
 
         return Payment::withoutGlobalScopes()->create([
             'workspace_id' => $workspace->id, 'user_id' => $user?->id, 'gateway' => $gateway, 'plan' => $plan, 'cycle' => $cycle,
             'amount' => $amount, 'tax' => $tax, 'total' => $amount + $tax,
             'order_id' => 'sd_'.$workspace->id.'_'.Str::lower(Str::random(14)),
+            'meta' => $setup > 0 ? ['setup_fee' => $setup] : null,
         ]);
+    }
+
+    /** One-time setup fee (OTC), charged with the first paid plan only. Meta message charges are never billed here. */
+    public static function setupFeeDue(Workspace $workspace): float
+    {
+        $fee = (float) config('billing.setup_fee');
+        if ($fee <= 0) {
+            return 0;
+        }
+
+        return Payment::withoutGlobalScopes()->where('workspace_id', $workspace->id)->where('status', 'paid')->exists() ? 0 : $fee;
     }
 
     /**
@@ -138,7 +151,8 @@ class Billing
                 'state' => $workspace->billing_state, 'email' => $workspace->billing_email ?: $workspace->owner?->email,
                 'phone' => $workspace->billing_phone,
             ],
-            'description' => 'WhatsApp Business Suite: '.$payment->planName().' plan',
+            'description' => 'WhatsApp Business Suite: '.$payment->planName().' plan'
+                .(($payment->meta['setup_fee'] ?? 0) > 0 ? ' + one-time setup (₹'.number_format($payment->meta['setup_fee'], 2).')' : ''),
             'period_from' => $from->toDateString(),
             'period_to' => $to->toDateString(),
             'subtotal' => $payment->amount,

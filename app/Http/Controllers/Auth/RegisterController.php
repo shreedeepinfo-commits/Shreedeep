@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Support\Branding;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -31,7 +32,10 @@ class RegisterController extends Controller
                 'email' => $data['email'],
                 'password' => $data['password'],
             ]);
-            $user->createWorkspace($data['company']);
+            $workspace = $user->createWorkspace($data['company']);
+            if ($reseller = app(Branding::class)->reseller()) { // signed up on a reseller's white-label domain
+                $workspace->forceFill(['reseller_id' => $reseller->id, 'trial_ends_at' => now()->addDays($reseller->trial_days)])->save();
+            }
 
             return $user;
         });
