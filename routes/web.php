@@ -14,17 +14,20 @@ use App\Http\Controllers\ContactGroupController;
 use App\Http\Controllers\CrmController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeveloperController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\WidgetController;
 use App\Http\Controllers\QuickReplyController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappAccountController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Webhooks\PaymentWebhookController;
+use App\Http\Controllers\Webhooks\StoreWebhookController;
 use App\Http\Controllers\Webhooks\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +43,11 @@ Route::post('/webhooks/whatsapp', [WhatsappWebhookController::class, 'receive'])
 // Payment gateway confirmations (set these URLs in the Razorpay / Cashfree dashboards).
 Route::post('/webhooks/razorpay', [PaymentWebhookController::class, 'razorpay'])->name('webhooks.razorpay');
 Route::post('/webhooks/cashfree', [PaymentWebhookController::class, 'cashfree'])->name('webhooks.cashfree');
+
+// Integrations: store order webhooks and the public website chat widget.
+Route::post('/webhooks/store/{token}', StoreWebhookController::class)->middleware('throttle:120,1')->name('webhooks.store');
+Route::get('/widget/{token}.js', [WidgetController::class, 'script'])->name('widget.script');
+Route::post('/webhooks/widget/{token}/click', [WidgetController::class, 'click'])->middleware('throttle:30,1')->name('widget.click');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
@@ -165,6 +173,12 @@ Route::middleware(['auth', 'workspace', 'subscribed'])->group(function () {
         Route::post('/developers/webhooks/{endpoint}/test', [DeveloperController::class, 'testWebhook'])->middleware('throttle:10,1')->name('developers.webhooks.test');
         Route::delete('/developers/webhooks/{endpoint}', [DeveloperController::class, 'destroyWebhook'])->name('developers.webhooks.destroy');
         Route::post('/developers/deliveries/{delivery}/retry', [DeveloperController::class, 'retryDelivery'])->name('developers.deliveries.retry');
+
+        Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');
+        Route::put('/integrations/widget', [IntegrationController::class, 'saveWidget'])->name('integrations.widget');
+        Route::get('/integrations/qr', [IntegrationController::class, 'qr'])->middleware('throttle:60,1')->name('integrations.qr');
+        Route::put('/integrations/stores/{type}', [IntegrationController::class, 'saveStore'])->name('integrations.store');
+        Route::post('/integrations/stores/{type}/secret', [IntegrationController::class, 'rotateSecret'])->name('integrations.secret');
 
         Route::resource('automations', AutomationController::class)->except('show');
         Route::post('/automations/{automation}/toggle', [AutomationController::class, 'toggle'])->name('automations.toggle');
