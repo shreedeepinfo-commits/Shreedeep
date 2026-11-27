@@ -19,7 +19,34 @@ class Workspace extends Model
 
     protected function casts(): array
     {
-        return ['trial_ends_at' => 'datetime', 'plan_ends_at' => 'datetime', 'auto_assign' => 'boolean'];
+        return ['trial_ends_at' => 'datetime', 'plan_ends_at' => 'datetime', 'suspended_at' => 'datetime', 'auto_assign' => 'boolean'];
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    /** trial, active, expired or suspended: used by the super admin. */
+    public function status(): string
+    {
+        return match (true) {
+            $this->isSuspended() => 'suspended',
+            $this->hasActivePlan() => 'active',
+            $this->onTrial() => 'trial',
+            default => 'expired',
+        };
+    }
+
+    /** Monthly value of the current paid plan (for MRR), before GST. */
+    public function monthlyValue(): float
+    {
+        if (! $this->hasActivePlan()) {
+            return 0;
+        }
+        $cycle = config('billing.cycles.'.($this->plan_cycle ?: 'monthly'));
+
+        return round(config("billing.plans.{$this->plan}.price") * (100 - ($cycle['discount'] ?? 0)) / 100, 2);
     }
 
     // ---- Subscription ----

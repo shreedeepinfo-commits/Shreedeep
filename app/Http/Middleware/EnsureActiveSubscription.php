@@ -13,13 +13,16 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureActiveSubscription
 {
-    private const ALWAYS_ALLOWED = ['subscription.*', 'logout', 'profile.*', 'workspaces.switch'];
+    private const ALWAYS_ALLOWED = ['subscription.*', 'logout', 'profile.*', 'workspaces.switch', 'admin.impersonate.stop'];
 
     public function __construct(private CurrentWorkspace $current) {}
 
     public function handle(Request $request, Closure $next): Response
     {
         $workspace = $this->current->get();
+        if ($workspace?->isSuspended() && ! $request->routeIs('logout', 'admin.impersonate.stop')) {
+            return response()->view('suspended', ['workspace' => $workspace], 403);
+        }
         if (! $workspace || ! $workspace->isExpired() || $request->isMethodSafe() || $request->routeIs(...self::ALWAYS_ALLOWED)) {
             return $next($request);
         }
